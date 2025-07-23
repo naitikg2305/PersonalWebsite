@@ -1,3 +1,14 @@
+---
+title: "Lead Software Engineer"
+company: "Engineering IT, UMD"
+dates: "2022–2025"
+location: "College Park, MD"
+slug: "engineering-it"
+summaryPoints:
+  - Managed a dev team of 8 and handled hiring/training.
+  - Built a user platform integrated with Canvas Badges.
+  - Led frontend/backend development with FastAPI, React, MySQL.
+---
 ## Engineering IT  
 **Lead Software Engineer (2024–2025)**  
 **Software Development Engineer (2022–2024)**  

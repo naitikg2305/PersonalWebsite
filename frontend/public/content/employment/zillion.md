@@ -1,3 +1,15 @@
+---
+title: "Software Engineering Intern"
+company: "Zillion Technologies"
+dates: "Summer 2024"
+location: "Hybrid"
+slug: "zillion"
+summaryPoints:
+  - Built a vector search system from SharePoint files using OpenAI & Hugging Face.
+  - Designed OCR + delta-updating for large-scale indexing.
+  - Integrated a chatbot interface with metadata-rich search output.
+---
+
 # 🏢 Zillion Technologies — Software Engineering Intern  
 **Summer 2024 | Hybrid**  
 **Project: Intelligent File Search & Vector Database Integration**

@@ -1,3 +1,21 @@
+---
+title: "Student Ambassador"
+company: "Clark School of Engineering"
+dates: "2022–2023"
+location: "University of Maryland"
+slug: "clark-ambassador"
+summaryPoints:
+  - Represented the school at outreach and recruiting events.
+  - Provided campus tours and answered prospective questions.
+  - Helped plan events for incoming students and families.
+---
+
+## Contributions
+
+- Represented the engineering school in outreach and recruiting events.
+- Gave campus tours, answered prospective student questions.
+- Collaborated on organizing events and webinars.
+
 # Clark Ambassadors  
 **Role**: Student Ambassador  
 **Organization**: A. James Clark School of Engineering, University of Maryland  
