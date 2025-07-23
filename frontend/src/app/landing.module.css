@@ -1,0 +1,118 @@
+.container {
+  min-height: 100vh;
+  background-image: url('/home/naitikg2305/personalWebsite/PersonalWebsite/frontend/src/app/image.jpg'); /* Replace with your image */
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+  color: #00ff00;
+  font-family: monospace;
+  padding: 2rem;
+}
+
+.nameContainer {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 4rem;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 0 0 0px #00ff00;
+  transition: all 0.6s ease-in-out;
+  text-align: center;
+  z-index: 1000;
+}
+
+.nameContainer.shrunk {
+  top: 20px;
+  left: 20px;
+  transform: none;
+  font-size: 1.5rem;
+  color: #00ff00;
+  text-shadow: none;
+}
+
+.name {
+  display: inline-block;
+}
+
+.quote {
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  color: #00ff00;
+  text-shadow: 0 0 8px #00ff00;
+}
+
+.contentContainer {
+  padding-top: 100vh;
+  padding-bottom: 4rem;
+  width: 100%;
+}
+
+
+.terminal {
+  background-color: #000000e6;
+  border: 1px solid #00ff00;
+  padding: 2rem;
+  border-radius: 5px;
+  box-shadow: 0 0 10px #00ff00;
+  margin: 0 auto;
+  width: 100%;
+}
+
+
+.terminalHeader {
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #00ff00;
+}
+
+.terminalBody {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 1rem;
+  color: #00ff00;
+}
+
+.cursor {
+  animation: blink 1s step-start infinite;
+}
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: black;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  z-index: 1001;
+  font-family: monospace;
+}
+
+.navTitle {
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.navLinks {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.navLink {
+  text-decoration: none;
+  color: white;
+  transition: color 0.3s ease;
+}
+
+.navLink:hover {
+  color: #00ff00;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
