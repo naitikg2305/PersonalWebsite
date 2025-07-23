@@ -1,5 +1,3 @@
-
-
 import { readProject } from '../../../lib/readProject';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -36,29 +34,54 @@ export default function ProjectDetailPage({ params }: { params: { slug: string }
       {/* Summary */}
       <p className={styles.projectSummary}>{data.summary}</p>
 
-      {/* Linked Files Section */}
+      {/* Linked Files */}
       <div className={styles.projectFiles}>
         {data.pdfs?.length > 0 && (
-          <FileList title="📄 PDFs" files={data.pdfs} slug={data.slug} prefix="Featured" isViewer={false} />
+          <FileList
+            title="📄 PDFs"
+            files={data.pdfs}
+            slug={data.slug}
+            prefix="Featured"
+            isViewer={false}
+          />
         )}
         {data.stls?.length > 0 && (
-          <FileList title="🧊 STL Files" files={data.stls} slug={data.slug} prefix="Featured" isViewer={true} />
+          <FileList
+            title="🧊 STL Files (viewable)"
+            files={data.stls}
+            slug={data.slug}
+            prefix="Featured"
+            isViewer={true}
+            viewerType="stl-viewer"
+          />
         )}
         {data.docs?.length > 0 && (
-          <FileList title="📚 Docs" files={data.docs} slug={data.slug} prefix="Featured" isViewer={false} />
+          <FileList
+            title="📚 Docs"
+            files={data.docs}
+            slug={data.slug}
+            prefix="Featured"
+            isViewer={true}
+            viewerType="doc-viewer"
+          />
         )}
       </div>
 
-      {/* Markdown Body */}
+      {/* Markdown Content */}
       <div className={styles.markdownContent}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
             img: ({ src, alt }) => {
               const safeSrc = typeof src === 'string' ? src : '';
-              return safeSrc ? (
+              const resolvedSrc =
+                safeSrc.startsWith('http') || safeSrc.startsWith('data:image')
+                  ? safeSrc
+                  : `/content/projects/Featured/${params.slug}/${safeSrc}`;
+
+              return (
                 <img
-                  src={safeSrc}
+                  src={resolvedSrc}
                   alt={alt || ''}
                   style={{
                     maxWidth: '100%',
@@ -69,7 +92,7 @@ export default function ProjectDetailPage({ params }: { params: { slug: string }
                     backgroundColor: '#111',
                   }}
                 />
-              ) : null;
+              );
             },
           }}
         >
@@ -81,7 +104,7 @@ export default function ProjectDetailPage({ params }: { params: { slug: string }
 }
 
 /**
- * Shared file list rendering component
+ * Shared component for rendering file lists
  */
 function FileList({
   title,
@@ -89,12 +112,14 @@ function FileList({
   slug,
   prefix,
   isViewer,
+  viewerType,
 }: {
   title: string;
   files: string[];
   slug: string;
   prefix: string;
   isViewer: boolean;
+  viewerType?: 'stl-viewer' | 'doc-viewer';
 }) {
   return (
     <>
@@ -102,8 +127,8 @@ function FileList({
       <ul>
         {files.map((file, idx) => {
           const fileName = file.split('/').pop();
-          const href = isViewer
-            ? `/stl-viewer?file=/content/projects/${prefix}/${slug}/${file}`
+          const href = isViewer && viewerType
+            ? `/${viewerType}?file=/content/projects/${prefix}/${slug}/${file}`
             : `/content/projects/${prefix}/${slug}/${file}`;
           return (
             <li key={idx}>

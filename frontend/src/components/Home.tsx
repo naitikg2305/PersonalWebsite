@@ -68,9 +68,9 @@ export default function Home({ workExperiences }: HomeProps) {
             <div className={styles.navLinks}>
               <a href="#">Home</a>
               <a href="/projects">Projects</a>
-              <a href="#builds">Builds</a>
-              <a href="#knowledge">Knowledge</a>
-              <a href="#interests">Interests</a>
+              <a href="/builds">Builds</a>
+              <a href="/knowledge">Knowledge</a>
+              <a href="/interests">Interests</a>
               <a href="#experience">Experience</a>
             </div>
           </div>
