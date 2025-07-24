@@ -12,6 +12,7 @@ slug: "sailing"
 
 I've had the privilege of sailing both small and large boats as part of the UMD sailing team and beyond — each offering its own unique set of skills, strategies, and adrenaline-pumping moments.
 
+![alt text](Screenshot_20250724_011643_Instagram.jpg) ![alt text](Screenshot_20250724_011650_Instagram.jpg)
 ---
 
 ## 🌀 Points of Sail
@@ -24,6 +25,8 @@ Understanding the angle of your boat relative to the wind is foundational in sai
 - **Broad Reach**: Wind from behind at an angle
 - **Running**: Wind directly from behind — requires more steering control
 
+![alt text](image-1.png)
+
 ---
 
 ## 🔄 Roll Tacking (in FJs)
@@ -35,6 +38,7 @@ In Flying Juniors (FJs), roll tacking is critical for efficient maneuvering duri
 3. Minimize time in irons and maintain momentum.
 
 > Timing and communication are key — every ounce of speed counts in competitive dinghy racing.
+![alt text](image-2.png)
 
 ---
 
