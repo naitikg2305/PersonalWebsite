@@ -1,5 +1,6 @@
 ---
 title: "Custom 3d Printed Components for Skadis"
+slug: ikea-skadis
 date: "2024-06-14"
 tags: ["CAD"]
 summary: "Due to lack of options in the market, I custom printed peg board items"

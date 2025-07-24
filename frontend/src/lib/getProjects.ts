@@ -29,6 +29,7 @@ export function getProjects(): Project[] {
         stls: data.stls || [],
         docs: data.docs || [],
         youtube: data.youtube || '',
+        github: data.github || '',
       };
     })
     .filter(Boolean) as Project[];

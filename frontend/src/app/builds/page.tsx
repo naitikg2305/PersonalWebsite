@@ -9,14 +9,40 @@ export default function BuildsPage() {
 
   return (
     <div className={styles.experienceSection} id="builds">
-      <h2 style={{ color: '#00ff00', marginBottom: '2rem' }}>🧱 Builds</h2>
+      <h2 style={{
+  color: '#00ff00',
+  fontSize: '2rem',
+  borderBottom: '2px solid #00ff00',
+  paddingBottom: '0.5rem',
+  marginTop: '2rem'
+}}>
+  🧱 Builds
+</h2>
+<h6 style={{
+  color: '#00ff00',
+  fontSize: '2rem',
+  
+  paddingBottom: '0.5rem',
+  marginTop: '2rem'
+}}>
+  🛻 Car Projects
+</h6>
 
-      <h3 style={{ color: '#00ff00' }}>🛻 Car Projects</h3>
+
+      
       {carBuilds.map(build => (
         <BuildCard key={build.slug} {...build} />
       ))}
-
-      <h3 style={{ color: '#00ff00', marginTop: '3rem' }}>🧊 3D Printing Projects</h3>
+        <h6 style={{
+  color: '#00ff00',
+  fontSize: '2rem',
+  
+  paddingBottom: '0.5rem',
+  marginTop: '2rem'
+}}>
+  🧊 3D Printing Projects
+</h6>
+      
       {printBuilds.map(build => (
         <BuildCard key={build.slug} {...build} />
       ))}

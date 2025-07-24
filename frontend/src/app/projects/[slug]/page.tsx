@@ -8,10 +8,8 @@ export default function ProjectDetailPage({ params }: { params: { slug: string }
 
   return (
     <div className={styles.projectDetail}>
-      {/* Title */}
       <h1>{data.title}</h1>
 
-      {/* Banner Image */}
       {data.image && (
         <img
           src={data.image}
@@ -20,7 +18,6 @@ export default function ProjectDetailPage({ params }: { params: { slug: string }
         />
       )}
 
-      {/* YouTube Embed */}
       {data.youtube && (
         <div className={styles.videoWrapper}>
           <iframe
@@ -31,43 +28,42 @@ export default function ProjectDetailPage({ params }: { params: { slug: string }
         </div>
       )}
 
-      {/* Summary */}
       <p className={styles.projectSummary}>{data.summary}</p>
 
-      {/* Linked Files */}
+      {/* ✅ GitHub Button */}
+      {data.github && (
+        <a
+          href={data.github}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-block',
+            marginBottom: '1.5rem',
+            backgroundColor: '#0d1117',
+            color: '#fff',
+            padding: '0.5rem 1rem',
+            borderRadius: '5px',
+            border: '1px solid #30363d',
+            fontFamily: 'monospace',
+            textDecoration: 'none',
+          }}
+        >
+          🌐 View on GitHub
+        </a>
+      )}
+
       <div className={styles.projectFiles}>
         {data.pdfs?.length > 0 && (
-          <FileList
-            title="📄 PDFs"
-            files={data.pdfs}
-            slug={data.slug}
-            prefix="Featured"
-            isViewer={false}
-          />
+          <FileList title="📄 PDFs" files={data.pdfs} slug={data.slug} prefix="Featured" isViewer={false} />
         )}
         {data.stls?.length > 0 && (
-          <FileList
-            title="🧊 STL Files (viewable)"
-            files={data.stls}
-            slug={data.slug}
-            prefix="Featured"
-            isViewer={true}
-            viewerType="stl-viewer"
-          />
+          <FileList title="🧊 STL Files (viewable)" files={data.stls} slug={data.slug} prefix="Featured" isViewer={true} viewerType="stl-viewer" />
         )}
         {data.docs?.length > 0 && (
-          <FileList
-            title="📚 Docs"
-            files={data.docs}
-            slug={data.slug}
-            prefix="Featured"
-            isViewer={true}
-            viewerType="doc-viewer"
-          />
+          <FileList title="📚 Docs" files={data.docs} slug={data.slug} prefix="Featured" isViewer={true} viewerType="doc-viewer" />
         )}
       </div>
 
-      {/* Markdown Content */}
       <div className={styles.markdownContent}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
@@ -103,9 +99,6 @@ export default function ProjectDetailPage({ params }: { params: { slug: string }
   );
 }
 
-/**
- * Shared component for rendering file lists
- */
 function FileList({
   title,
   files,

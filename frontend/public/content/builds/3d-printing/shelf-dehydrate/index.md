@@ -1,5 +1,6 @@
 ---
 title: "3d Printed Wall Mounted Shelf"
+slug: shelf-dehydrate
 date: "2024-11-01"
 tags: ["CAD"]
 summary: "Instead of buying shelves, I decided to print them"

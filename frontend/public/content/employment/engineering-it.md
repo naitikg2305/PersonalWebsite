@@ -1,5 +1,6 @@
 ---
 title: "Lead Software Engineer"
+order: 2
 company: "Engineering IT, UMD"
 dates: "2022–2025"
 location: "College Park, MD"

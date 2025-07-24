@@ -9,6 +9,7 @@ export interface Project {
   pdfs?: string[];
   stls?: string[];
   docs?: string[];
+  github?: string;
   files?: {
     name: string;
     path: string;

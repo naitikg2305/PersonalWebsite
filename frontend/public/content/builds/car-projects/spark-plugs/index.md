@@ -1,3 +1,13 @@
+---
+title: "Replacing Overdue Spark Plugs"
+slug: "spark-plugs"
+date: "2024-07-15"
+tags: ["Electronics","CAD"]
+summary: "My used car needed some preventative maintenance to increase efficiency and performance"
+featured: false   # only include if it's a featured project
+
+stls: ["./5ClipsNormal.3mf", "./dock.stl","./charger.stl","./speaker.3mf"]
+---
 # 🔧 Replacing Spark Plugs on a High-Mileage Car
 
 I bought a used car with **150,000 miles**, and upon researching, found that spark plugs should be replaced around **75,000 miles**. That means mine were **long overdue**. The stock spark plugs are **iridium spark plugs** (I'll attach the model number later). They’re supposed to be gapped at **0.044 inches**.

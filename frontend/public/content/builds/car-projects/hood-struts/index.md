@@ -1,3 +1,13 @@
+---
+title: "Car Hood Struts"
+slug: "hood-struts"
+date: "2024-07-15"
+tags: ["Electronics","CAD"]
+summary: "Hydraulic struts that keep the car hood open for ease of access"
+featured: false   # only include if it's a featured project
+
+stls: ["./5ClipsNormal.3mf", "./dock.stl","./charger.stl","./speaker.3mf"]
+---
 # 🚗 Installing Hydraulic Hood Struts
 
 I installed **hydraulic hood struts** in my car to make working under the hood easier — and let’s be honest, it just looks cooler. Instead of relying on the basic manual hood prop rod, I wanted a smooth, automatic hood-lifting experience.

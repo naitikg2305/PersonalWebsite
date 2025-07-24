@@ -1,3 +1,13 @@
+---
+title: "Rerofitting Android Auto"
+slug: "retrofit-aa"
+date: "2024-07-15"
+tags: ["Electronics","CAD"]
+summary: "Hydraulic struts that keep the car hood open for ease of access"
+featured: false   # only include if it's a featured project
+
+stls: ["./5ClipsNormal.3mf", "./dock.stl","./charger.stl","./speaker.3mf"]
+---
 # 📱 Retrofitting Android Auto into a 2017 Car (Flush OEM Look)
 
 Because my 2017 car didn’t come with Android Auto, and I didn’t want an aftermarket or protruding screen, I decided to retrofit a factory-style Android Auto experience by internally replacing the USB hub and installing new firmware. This involved a deep interior disassembly and careful wire routing. Here's how I did it:

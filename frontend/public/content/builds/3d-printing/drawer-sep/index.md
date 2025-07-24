@@ -1,5 +1,6 @@
 ---
 title: "Custom Drawer Bins"
+slug: drawer-sep
 date: "2024-10-36"
 tags: ["CAD"]
 summary: "market bins are too small and waste space. To solve this, I designed custom bins"

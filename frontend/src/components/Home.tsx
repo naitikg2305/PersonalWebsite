@@ -5,6 +5,8 @@ import styles from '../styles/landing.module.css';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import WorkExperienceSection from './WorkExperienceSection';
+import { FaGithub, FaLinkedin } from "react-icons/fa";
+import { HiOutlineMail } from "react-icons/hi";
 
 type Experience = {
   title: string;
@@ -41,7 +43,7 @@ export default function Home({ workExperiences }: HomeProps) {
   useEffect(() => {
     fetch('/content/about/about.md')
       .then((res) => res.text())
-      .then((text) => setAboutContent(text));
+      .then(setAboutContent);
   }, []);
 
   useEffect(() => {
@@ -61,17 +63,39 @@ export default function Home({ workExperiences }: HomeProps) {
         style={{ transform: `translateY(${scrollY * 0.5}px)` }}
       />
 
+      {!scrolled && (
+        <div className={styles.floatingImageWrapper}>
+          <img
+            src="/profile.jpg"
+            alt="Profile"
+            className={styles.floatingImage}
+          />
+        </div>
+      )}
+
       <div className={styles.container}>
         {scrolled && (
           <div className={styles.navbar}>
-            <div className={styles.navTitle}>Naitik Gupta</div>
+            <div className={styles.navTitle} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span>Naitik Gupta</span>
+              <a href="https://github.com/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#fff' }}>
+                <FaGithub />
+              </a>
+              <a href="https://linkedin.com/in/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#0077b5' }}>
+                <FaLinkedin />
+              </a>
+              <a href="mailto:naitikg2305@gmail.com" style={{ color: '#00ff00' }}>
+                <HiOutlineMail />
+              </a>
+            </div>
+
             <div className={styles.navLinks}>
               <a href="#">Home</a>
+              <a href="#experience">Experience</a>
               <a href="/projects">Projects</a>
               <a href="/builds">Builds</a>
               <a href="/knowledge">Knowledge</a>
               <a href="/interests">Interests</a>
-              <a href="#experience">Experience</a>
             </div>
           </div>
         )}
