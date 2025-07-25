@@ -2,7 +2,7 @@
 title: "Autonomous Robot- Crash Site Investigation"
 date: "2021-12-15"
 tags: ["Computer Vision", "IOT", "Electronics"]
-youtube: "https://youtu.be/abc123"
+youtube: "https://youtube.com/embedcle/cBUmgTyyNec"
 stls: []
 pdfs: ["./MS9.pdf"]
 featured: true

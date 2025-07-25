@@ -3,7 +3,7 @@ title: "Self-balancing Robot using PID control"
 date: "2025-05-20"
 tags: ["PID Control", "IOT"]
 summary: "This website showcases the development, implementation, and final results of our autonomous two-wheeled balancing robot."
-youtube: "https://youtube.com/..."
+youtube: "https://youtube.com/embed/SCRzAd6b8Dw?feature=share"
 featured: true   # only include if it's a featured project
 
 
@@ -24,6 +24,7 @@ Inspired by the classic inverted pendulum problem, our robot demonstrates real-t
 
 ---
 
+
 ## 🛠️ Hardware Design
 
 Our robot features:
@@ -36,7 +37,17 @@ Our robot features:
 - **Frame:** 3D-printed chassis, with electronics mounted low for stability
 - **Extras:** Darth Vader figurine on top for aesthetics!
 
+> **Wiring Note:** We routed power from the 12V battery through buck converters to deliver clean 5V and 3.3V for logic and sensor components. All grounds from the Arduino, H-bridge, IMU, and buck converters are tied together to form a common ground reference. Motor power lines run directly from the battery to the L298N to handle current draw, while logic control pins are connected from the Arduino to the H-bridge via digital pins. I²C lines from the MPU6050 are connected to A4 and A5, with pull-up resistors handled internally. Each connection was tested using a multimeter for continuity, and critical joints were soldered and insulated with shrink wrap for durability.
+
 All components were selected based on torque calculations and center of mass optimization. The wheels are 5 inches in diameter, offering a balance between responsiveness and ground clearance.
+
+> The IMU is mounted close to the motors to reduce sensor lag and noise, while the battery is positioned low in the chassis to help with overall center of mass and balancing. The buck converters provide stable 5V and 3.3V rails from the main 12V battery, which also directly powers the motors and is safe for the Arduino’s VIN input (which tolerates up to 12V). Even with a 2V drop across the motors, our logic power is regulated and isolated from load variations.
+
+### 🧵 Wiring Details
+
+We routed power from the 12V battery through buck converters to deliver clean 5V and 3.3V for logic and sensor components. All grounds from the Arduino, H-bridge, IMU, and buck converters are tied together to form a common ground reference. Motor power lines run directly from the battery to the L298N to handle current draw, while logic control pins are connected from the Arduino to the H-bridge via digital pins. I²C lines from the MPU6050 are connected to A4 and A5, with pull-up resistors handled internally. Each connection was tested using a multimeter for continuity, and critical joints were soldered and insulated with shrink wrap for durability.
+
+---
 
 ---
 
@@ -95,6 +106,24 @@ Refer to the shopping list document for exact components. Major items include:
 ![Alt Text](image_577248.jpg)
 
 ---
+## 🔌 Wiring Table
+
+| Function        | Component       | Arduino Pin | Direction     | Notes                            |
+|----------------|-----------------|-------------|---------------|----------------------------------|
+| Motor A DIR 1  | H-Bridge INA1   | D7          | Output        | Sets forward/reverse             |
+| Motor A DIR 2  | H-Bridge INB1   | D8          | Output        |                                  |
+| Motor A PWM    | H-Bridge PWM1  | D5          | PWM Output    |                                  |
+| Motor B DIR 1  | H-Bridge INA2   | D9          | Output        |                                  |
+| Motor B DIR 2  | H-Bridge INB2   | D10         | Output        |                                  |
+| Motor B PWM    | H-Bridge PWM2  | D6          | PWM Output    |                                  |
+| I²C SDA        | MPU6050         | A4          | I²C           | Connects to MPU6050 SDA          |
+| I²C SCL        | MPU6050         | A5          | I²C           | Connects to MPU6050 SCL          |
+| 5V Logic Power | H-Bridge / IMU  | -           | Power         | From 5V buck converter           |
+| GND            | All Devices     | -           | Ground        | Common ground for all            |
+| VIN            | 9V Battery      | VIN         | Power Input   | Powers Arduino Uno               |
+
+---
+
 
 ## 📅 Timeline
 
@@ -129,5 +158,3 @@ This project was a successful application of control theory, hardware integratio
 - [Demo Videos](https://drive.google.com/drive/folders/1PLejTndw4LxtoSVA8v18seIj9uFeChZ4?usp=sharing)
 
 ---
-
-Stay tuned—photos and source code will be added soon!

@@ -6,7 +6,7 @@ tags: ["Electronics","CAD"]
 summary: "Wiring Setup to enable standing desk with multiple monitors"
 featured: false   # only include if it's a featured project
 
-stls: ["./5ClipsNormal.3mf", "./dock.stl","./charger.stl","./speaker.3mf"]
+stls: ["./5ClipsNormal.stl", "./dock.stl","./charger.stl","./speaker.stl"]
 
 ---
 

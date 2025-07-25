@@ -3,8 +3,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '../../../styles/landing.module.css';
 
-export default function ProjectDetailPage({ params }: { params: { slug: string } }) {
-  const { data, content } = readProject(params.slug);
+export default async function ProjectDetailPage({ params }: { params: { slug: string } }) {
+  const { data, content } = await readProject(params.slug);
 
   return (
     <div className={styles.projectDetail}>
@@ -23,6 +23,8 @@ export default function ProjectDetailPage({ params }: { params: { slug: string }
           <iframe
             src={data.youtube}
             title="YouTube Video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+  
             allowFullScreen
           />
         </div>

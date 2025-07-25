@@ -1,18 +1,18 @@
 // lib/readProject.ts
 
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
 import { Project } from '../types/project';
 
 const basePath = path.join(process.cwd(), 'public', 'content', 'projects', 'Featured');
 
-export function readProject(slug: string): {
+export async function readProject(slug: string): Promise<{
   data: Project;
   content: string;
-} {
+}> {
   const indexPath = path.join(basePath, decodeURIComponent(slug), 'index.md');
-  const file = fs.readFileSync(indexPath, 'utf-8');
+  const file = await fs.readFile(indexPath, 'utf-8');
   const { data, content } = matter(file);
 
   return {
@@ -26,6 +26,7 @@ export function readProject(slug: string): {
       stls: data.stls || [],
       docs: data.docs || [],
       youtube: data.youtube || '',
+      github: data.github || '', // ✅ include if used
     },
     content,
   };

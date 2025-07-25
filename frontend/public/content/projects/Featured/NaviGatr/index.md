@@ -2,10 +2,10 @@
 title: "NaviGatr: AI Assitance for Visually Impaired"
 date: "2025-05-20"
 tags: ["AI", "Computer Vision", "Firmware", "Embedded", "Hardware"]
-youtube: "https://youtu.be/abc123"          # optional
+youtube: "https://www.youtube.com/embed/RDT_3vyE_UA"          # optional
 featured: true                               # optional
 summary: "NaviGatr is a project that aims to aid the visually impaired using various computer vision algorithms. While prior systems have used object detection or depth sensing independently, a combined real-time approach has not been widely implemented."    # required
-github: https://github.com/naitikg2305/NaviGatr
+github: https://github.com/naitikg2305/NaviGatr/tree/pi_main
 
 pdfs: ["./Final_Report.pdf", "./Poster.pdf", "./Project_Summary.pdf", "./Slides.pdf"]  # optional
 stls: [ "./headset.stl", "./fan_Screen_Top.stl"]          # optional

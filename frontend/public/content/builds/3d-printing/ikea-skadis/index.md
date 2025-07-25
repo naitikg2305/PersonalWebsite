@@ -7,7 +7,7 @@ summary: "Due to lack of options in the market, I custom printed peg board items
 featured: false   # only include if it's a featured project
 
 
-stls: ["./spool_left.stl", "./spool_right.stl", "./drawer.3mf", "./shelf.3mf"]
+stls: ["./spool_left.stl", "./spool_right.stl", "./drawer.stl", "./shelf.stl"]
 
 ---
 
