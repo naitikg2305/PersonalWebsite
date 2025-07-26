@@ -4,6 +4,7 @@ date: "2025-05-20"
 tags: ["PID Control", "IOT"]
 summary: "This website showcases the development, implementation, and final results of our autonomous two-wheeled balancing robot."
 youtube: "https://youtube.com/embed/SCRzAd6b8Dw?feature=share"
+github: https://github.com/naitikg2305/Self-Balancing-Robot
 featured: true   # only include if it's a featured project
 
 
