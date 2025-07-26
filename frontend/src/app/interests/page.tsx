@@ -1,9 +1,8 @@
-
 import { getInterests } from '../../lib/getInterests';
 import Link from 'next/link';
 
-export default function InterestsPage() {
-  const interests = getInterests();
+export default async function InterestsPage() {
+  const interests = await getInterests(); // ✅ await
 
   return (
     <div style={{ padding: '2rem' }}>

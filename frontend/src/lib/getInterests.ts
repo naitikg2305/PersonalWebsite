@@ -1,29 +1,28 @@
-
-import fs from 'fs';
+// lib/getInterests.ts
+import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
 
-export interface Interest {
-  slug: string;
-  title: string;
-  content: string;
-}
+const basePath = path.join(process.cwd(), 'public', 'content', 'interests');
 
-export function getInterests(): Interest[] {
-  const dir = path.join(process.cwd(), 'public', 'content', 'interests');
-  if (!fs.existsSync(dir)) return [];
+export async function getInterests(): Promise<{ slug: string; title: string }[]> {
+  const files = await fs.readdir(basePath);
 
-  return fs.readdirSync(dir)
-    .filter(f => f.endsWith('.md'))
-    .map(file => {
-      const filePath = path.join(dir, file);
-      const raw = fs.readFileSync(filePath, 'utf-8');
-      const { data, content } = matter(raw);
+  const interests = await Promise.all(
+    files
+      .filter((file) => file.endsWith('.md'))
+      .map(async (file) => {
+        const slug = file.replace(/\.md$/, '');
+        const fullPath = path.join(basePath, file);
+        const content = await fs.readFile(fullPath, 'utf-8');
+        const { data } = matter(content);
 
-      return {
-        slug: file.replace('.md', ''),
-        title: data.title || file.replace('.md', ''),
-        content,
-      };
-    });
+        return {
+          slug,
+          title: data.title || slug,
+        };
+      })
+  );
+
+  return interests;
 }
