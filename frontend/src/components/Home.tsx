@@ -7,6 +7,10 @@ import remarkGfm from 'remark-gfm';
 import WorkExperienceSection from './WorkExperienceSection';
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { HiOutlineMail } from "react-icons/hi";
+import ChatbotButton from './ChatbotButton'; // adjust path as needed
+import ChatSection from './ChatSection';
+
+
 
 type Experience = {
   title: string;
@@ -87,6 +91,8 @@ export default function Home({ workExperiences }: HomeProps) {
               <a href="mailto:naitikg2305@gmail.com" style={{ color: '#00ff00' }}>
                 <HiOutlineMail />
               </a>
+              <ChatbotButton />
+
             </div>
 
             <div className={styles.navLinks}>
@@ -120,6 +126,12 @@ export default function Home({ workExperiences }: HomeProps) {
         </div>
 
         <WorkExperienceSection experiences={workExperiences} />
+
+        <div id="chat">
+         <ChatSection />
+          </div>
+
+
       </div>
     </div>
   );
