@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { readBuild } from '../../../lib/readBuild';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
