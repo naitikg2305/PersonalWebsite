@@ -58,13 +58,13 @@ export default async function ProjectDetailPage({
       )}
 
       <div className={styles.projectFiles}>
-        {data.pdfs?.length > 0 && (
+        {Array.isArray(data.pdfs) && data.pdfs.length > 0 && (
           <FileList title="📄 PDFs" files={data.pdfs} slug={data.slug} prefix="Featured" isViewer={false} />
         )}
-        {data.stls?.length > 0 && (
+        {Array.isArray(data.stls) && data.stls.length > 0 && (
           <FileList title="🧊 STL Files (viewable)" files={data.stls} slug={data.slug} prefix="Featured" isViewer={true} viewerType="stl-viewer" />
         )}
-        {data.docs?.length > 0 && (
+        {Array.isArray(data.docs) && data.docs.length > 0 && (
           <FileList title="📚 Docs" files={data.docs} slug={data.slug} prefix="Featured" isViewer={true} viewerType="doc-viewer" />
         )}
       </div>
