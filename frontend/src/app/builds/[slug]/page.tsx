@@ -3,7 +3,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '../../../styles/landing.module.css';
 
-export default function BuildDetail({ params, searchParams }: { params: { slug: string }, searchParams: { section: string } }) {
+type PageProps = {
+  params: { slug: string };
+  searchParams: { section: string };
+};
+
+export default function BuildDetail({ params, searchParams }: PageProps) {
   const { slug } = params;
   const section = searchParams.section;
   const { content, data } = readBuild(section, slug);
@@ -28,7 +33,7 @@ export default function BuildDetail({ params, searchParams }: { params: { slug: 
             title="📄 PDFs"
             files={data.pdfs}
             slug={slug}
-            prefix={`${section}`}
+            prefix={section}
             isViewer={false}
           />
         )}
@@ -37,7 +42,7 @@ export default function BuildDetail({ params, searchParams }: { params: { slug: 
             title="🧊 STL Files (viewable)"
             files={data.stls}
             slug={slug}
-            prefix={`${section}`}
+            prefix={section}
             isViewer={true}
             viewerType="stl-viewer"
           />
@@ -47,7 +52,7 @@ export default function BuildDetail({ params, searchParams }: { params: { slug: 
             title="📚 Docs"
             files={data.docs}
             slug={slug}
-            prefix={`${section}`}
+            prefix={section}
             isViewer={true}
             viewerType="doc-viewer"
           />
