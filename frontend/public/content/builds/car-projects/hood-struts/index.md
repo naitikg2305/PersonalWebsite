@@ -5,8 +5,6 @@ date: "2024-07-15"
 tags: ["Electronics","CAD"]
 summary: "Hydraulic struts that keep the car hood open for ease of access"
 featured: false   # only include if it's a featured project
-
-stls: ["./5ClipsNormal.3mf", "./dock.stl","./charger.stl","./speaker.3mf"]
 ---
 # 🚗 Installing Hydraulic Hood Struts
 

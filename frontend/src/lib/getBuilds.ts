@@ -29,10 +29,18 @@ export async function getBuilds(): Promise<Build[]> {
           console.log(`[BUILD] Loaded: ${data.slug} from ${section}/${folder}`);
 
           builds.push({
-            ...data,
-            section,
-            content,
-          });
+  title: data.title || folder,
+  slug: data.slug || folder,
+  summary: data.summary || '',
+  image: data.image || '',
+  tags: data.tags || [],
+  stls: data.stls || [],
+  pdfs: data.pdfs || [],
+  docs: data.docs || [],
+  date: data.date || '',
+  section,
+  content,
+});
         } catch {
           console.warn(`[SKIP] index.md not found or unreadable in ${folder}`);
         }
