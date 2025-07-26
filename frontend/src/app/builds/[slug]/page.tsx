@@ -6,13 +6,12 @@ import styles from '../../../styles/landing.module.css';
 
 
 
-export default function BuildDetail({
-  params,
-  searchParams,
-}: {
+interface PageProps {
   params: { slug: string };
   searchParams: { section: string };
-}) {
+}
+
+export default function BuildDetail({ params, searchParams }: PageProps) {
   const { slug } = params;
   const section = searchParams.section;
   const { content, data } = readBuild(section, slug);
