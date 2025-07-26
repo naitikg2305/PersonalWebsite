@@ -1,15 +1,16 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { readExperience } from '../../../lib/readExperience';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import styles from "../../../styles/landing.module.css";
+import styles from '../../../styles/landing.module.css';
 
-export default function WorkExperiencePage({
-  params,
-}: {
-  params: { slug: string };
+export default async function WorkExperiencePage(props: {
+  params: Promise<{ slug: string }>;
 }) {
-  //console.log(params.slug);
-  const { content, data } = readExperience(params.slug);
+  const { slug } = await props.params;
+  const { content, data } = await readExperience(slug);
 
   return (
     <div style={{ padding: '2rem', color: '#ffffffff', fontFamily: 'monospace' }}>
@@ -18,7 +19,7 @@ export default function WorkExperiencePage({
       <p><em>{data.dates} • {data.location}</em></p>
       <hr />
       <div className={styles.markdownContent}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]}  >
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>
           {content}
         </ReactMarkdown>
       </div>

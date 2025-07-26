@@ -1,28 +1,31 @@
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs'; // optional, if you're using fs inside readBuild
+
 import { readBuild } from '../../../lib/readBuild';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '../../../styles/landing.module.css';
 
+export default async function BuildDetail(
+  props: Promise<{
+    params: { slug: string };
+    searchParams: { section: string };
+  }>
+) {
+  const { params, searchParams } = await props;
 
+  const { slug } = await params;              // ✅ await params
+  const { section } = await searchParams;     // ✅ await searchParams
 
-export default async function BuildDetail({
-  params,
-  searchParams,
-}: {
-  params: { slug: string };
-  searchParams: { section: string };
-}) {
-  const { slug } = await params;
-  const section = await searchParams.section;
   const { content, data } = await readBuild(section, slug);
+
+  // ...render your UI
 
 
   return (
     <div className={styles.projectDetail}>
       <h1>{data.title}</h1>
 
-      {/* Banner Image */}
       {data.image && (
         <img
           src={`/content/builds/${section}/${slug}/${data.image}`}
@@ -31,16 +34,9 @@ export default async function BuildDetail({
         />
       )}
 
-      {/* Linked Files */}
       <div className={styles.projectFiles}>
         {data.pdfs?.length > 0 && (
-          <FileList
-            title="📄 PDFs"
-            files={data.pdfs}
-            slug={slug}
-            prefix={section}
-            isViewer={false}
-          />
+          <FileList title="📄 PDFs" files={data.pdfs} slug={slug} prefix={section} isViewer={false} />
         )}
         {data.stls?.length > 0 && (
           <FileList
@@ -64,7 +60,6 @@ export default async function BuildDetail({
         )}
       </div>
 
-      {/* Markdown */}
       <div className={styles.markdownContent}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
