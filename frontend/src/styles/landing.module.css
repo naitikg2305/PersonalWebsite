@@ -309,6 +309,10 @@
     transform: translateY(0) scale(1);
   }
 }
+.educationSpacingFix {
+  padding-top: 2rem !important;
+}
+
 
 @keyframes blink {
   50% {

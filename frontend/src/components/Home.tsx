@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import styles from '../styles/landing.module.css';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import WorkExperienceSection from './WorkExperienceSection';
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { HiOutlineMail } from "react-icons/hi";
-import ChatbotButton from './ChatbotButton'; // adjust path as needed
+
+import WorkExperienceSection from './WorkExperienceSection';
+import EducationSection from './EducationSection'; // new
+import ChatbotButton from './ChatbotButton';
 import ChatSection from './ChatSection';
-
-
 
 type Experience = {
   title: string;
@@ -23,9 +23,10 @@ type Experience = {
 
 interface HomeProps {
   workExperiences: Experience[];
+  educations: Experience[];
 }
 
-export default function Home({ workExperiences }: HomeProps) {
+export default function Home({ workExperiences, educations }: HomeProps) {
   const name = 'Naitik Gupta';
   const quote = 'Decode the world to build it better.';
 
@@ -92,12 +93,12 @@ export default function Home({ workExperiences }: HomeProps) {
                 <HiOutlineMail />
               </a>
               <ChatbotButton />
-
             </div>
 
             <div className={styles.navLinks}>
               <a href="#">Home</a>
               <a href="#experience">Experience</a>
+              <a href="#education">Education</a> {/* NEW */}
               <a href="/projects">Projects</a>
               <a href="/builds">Builds</a>
               <a href="/knowledge">Knowledge</a>
@@ -126,12 +127,11 @@ export default function Home({ workExperiences }: HomeProps) {
         </div>
 
         <WorkExperienceSection experiences={workExperiences} />
+        <EducationSection educations={educations} /> {/* NEW */}
 
         <div id="chat">
-         <ChatSection />
-          </div>
-
-
+          <ChatSection />
+        </div>
       </div>
     </div>
   );
