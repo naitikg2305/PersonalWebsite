@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
 
@@ -8,21 +8,31 @@ export interface KnowledgeNote {
   content: string;
 }
 
-export function getKnowledge(): KnowledgeNote[] {
+export async function getKnowledge(): Promise<KnowledgeNote[]> {
   const dir = path.join(process.cwd(), 'public', 'content', 'knowledge');
-  if (!fs.existsSync(dir)) return [];
 
-  return fs.readdirSync(dir)
-    .filter(f => f.endsWith('.md'))
-    .map(file => {
-      const filePath = path.join(dir, file);
-      const raw = fs.readFileSync(filePath, 'utf-8');
-      const { data, content } = matter(raw);
+  try {
+    const files = await fs.readdir(dir);
 
-      return {
-        slug: file.replace('.md', ''),
-        title: data.title || file.replace('.md', ''),
-        content,
-      };
-    });
+    const notes = await Promise.all(
+      files
+        .filter((file) => file.endsWith('.md'))
+        .map(async (file) => {
+          const filePath = path.join(dir, file);
+          const raw = await fs.readFile(filePath, 'utf-8');
+          const { data, content } = matter(raw);
+
+          return {
+            slug: file.replace('.md', ''),
+            title: data.title || file.replace('.md', ''),
+            content,
+          };
+        })
+    );
+
+    return notes;
+  } catch (err) {
+    console.warn(`[getKnowledge] Failed to read directory: ${err}`);
+    return [];
+  }
 }

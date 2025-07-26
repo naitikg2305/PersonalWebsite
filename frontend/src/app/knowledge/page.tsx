@@ -1,8 +1,8 @@
 import { getKnowledge } from '../../lib/getKnowledge';
 import Link from 'next/link';
 
-export default function KnowledgePage() {
-  const notes = getKnowledge();
+export default async function KnowledgePage() {
+  const notes = await getKnowledge(); // ✅ await the async function
 
   return (
     <div style={{ padding: '2rem' }}>
