@@ -9,10 +9,17 @@ type PageProps = {
   searchParams: { section: string };
 };
 
-export default function BuildDetail({ params, searchParams }: PageProps) {
+export default function BuildDetail({
+  params,
+  searchParams,
+}: {
+  params: { slug: string };
+  searchParams: { section: string };
+}) {
   const { slug } = params;
   const section = searchParams.section;
   const { content, data } = readBuild(section, slug);
+
 
   return (
     <div className={styles.projectDetail}>
