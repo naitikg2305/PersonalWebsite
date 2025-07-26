@@ -1,12 +1,12 @@
-import fs from 'fs';
+import fs from 'fs/promises'; // ✅ async
 import path from 'path';
 import matter from 'gray-matter';
 
 const educationBasePath = path.join(process.cwd(), 'public', 'content', 'education');
 
-export function readEducation(slug: string) {
+export async function readEducation(slug: string) {
   const filePath = path.join(educationBasePath, `${slug}.md`);
-  const file = fs.readFileSync(filePath, 'utf-8');
+  const file = await fs.readFile(filePath, 'utf-8'); // ✅ async read
   const { data, content } = matter(file);
 
   return {
