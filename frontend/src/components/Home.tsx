@@ -11,6 +11,7 @@ import WorkExperienceSection from './WorkExperienceSection';
 import EducationSection from './EducationSection'; // new
 import ChatbotButton from './ChatbotButton';
 import ChatSection from './ChatSection';
+import Link from 'next/link';
 
 type Experience = {
   title: string;
@@ -96,13 +97,13 @@ export default function Home({ workExperiences, educations }: HomeProps) {
             </div>
 
             <div className={styles.navLinks}>
-              <a href="#">Home</a>
-              <a href="#experience">Experience</a>
-              <a href="#education">Education</a> {/* NEW */}
-              <a href="/projects">Projects</a>
-              <a href="/builds">Builds</a>
-              <a href="/knowledge">Knowledge</a>
-              <a href="/interests">Interests</a>
+              <Link href="#">Home</Link>
+              <Link href="#experience">Experience</Link>
+              <Link href="#education">Education</Link> {/* NEW */}
+              <Link href="/projects">Projects</Link>
+              <Link href="/builds">Builds</Link>
+              <Link href="/knowledge">Knowledge</Link>
+              <Link href="/interests">Interests</Link>
             </div>
           </div>
         )}

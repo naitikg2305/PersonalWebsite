@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+
 import styles from '../styles/ChatbotButton.module.css';
 
 export default function ChatbotButton() {

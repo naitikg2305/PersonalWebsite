@@ -2,7 +2,6 @@ import { readExperience } from '../../../lib/readExperience';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from "../../../styles/landing.module.css";
-import rehypeHighlight from 'rehype-highlight';
 
 export default function WorkExperiencePage({
   params,

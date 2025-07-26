@@ -20,7 +20,7 @@ export default function ChatSection() {
 
       const data = await res.json();
       setResponse(data.response || 'No response received.');
-    } catch (err) {
+    } catch {
       setResponse('⚠️ Error talking to AI.');
     } finally {
       setLoading(false);
