@@ -4,9 +4,10 @@ import { Canvas, useLoader } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { Suspense } from 'react';
+import { BufferGeometry } from 'three';
 
 function Model({ url }: { url: string }) {
-  const geometry = useLoader(STLLoader, url);
+  const geometry = useLoader(STLLoader, url) as BufferGeometry;
   return (
     <mesh geometry={geometry}>
       <meshStandardMaterial color="#00ff00" />
