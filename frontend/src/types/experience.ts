@@ -5,4 +5,5 @@ export type Experience = {
   location: string;
   slug: string;
   summaryPoints: string[];
+  order?: number;
 };
