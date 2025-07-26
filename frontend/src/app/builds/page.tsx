@@ -2,8 +2,8 @@ import { getBuilds } from '../../lib/getBuilds';
 import BuildCard from '../../components/BuildCard';
 import styles from '../../styles/landing.module.css';
 
-export default function BuildsPage() {
-  const builds = getBuilds();
+export default async function BuildsPage() {
+  const builds = await getBuilds();
   const carBuilds = builds.filter(b => b.section === 'car-projects');
   const printBuilds = builds.filter(b => b.section === '3d-printing');
 

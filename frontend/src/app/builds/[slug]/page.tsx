@@ -6,16 +6,15 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '../../../styles/landing.module.css';
 
-export default async function BuildDetail(
-  props: Promise<{
-    params: { slug: string };
-    searchParams: { section: string };
-  }>
-) {
-  const { params, searchParams } = await props;
-
-  const { slug } = await params;              // ✅ await params
-  const { section } = await searchParams;     // ✅ await searchParams
+export default async function BuildDetail({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ section: string }>;
+}) {
+  const { slug } = await params;
+  const { section } = await searchParams;
 
   const { content, data } = await readBuild(section, slug);
 
