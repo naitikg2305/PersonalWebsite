@@ -4,10 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '../../../styles/landing.module.css';
 
-type PageProps = {
-  params: { slug: string };
-  searchParams: { section: string };
-};
+
 
 export default function BuildDetail({
   params,
