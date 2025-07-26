@@ -5,8 +5,8 @@ import { Project } from '../../types/project';
 import ProjectCard from '../../components/ProjectCard';
 import styles from '../../styles/landing.module.css';
 
-export default function ProjectsPage() {
-  const projects: Project[] = getProjects();
+export default async function ProjectsPage() {
+  const projects: Project[] = await getProjects();
 
   return (
     <div className={styles.projectGridPage}>

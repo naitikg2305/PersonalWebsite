@@ -3,8 +3,13 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '../../../styles/landing.module.css';
 
-export default async function ProjectDetailPage({ params }: { params: { slug: string } }) {
-  const { data, content } = await readProject(params.slug);
+export default async function ProjectDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const { data, content } = await readProject(slug);
 
   return (
     <div className={styles.projectDetail}>
@@ -24,7 +29,6 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
             src={data.youtube}
             title="YouTube Video"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-  
             allowFullScreen
           />
         </div>
@@ -32,7 +36,6 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
 
       <p className={styles.projectSummary}>{data.summary}</p>
 
-      {/* ✅ GitHub Button */}
       {data.github && (
         <a
           href={data.github}
@@ -75,7 +78,7 @@ export default async function ProjectDetailPage({ params }: { params: { slug: st
               const resolvedSrc =
                 safeSrc.startsWith('http') || safeSrc.startsWith('data:image')
                   ? safeSrc
-                  : `/content/projects/Featured/${params.slug}/${safeSrc}`;
+                  : `/content/projects/Featured/${slug}/${safeSrc}`;
 
               return (
                 <img
