@@ -6,15 +6,16 @@ import styles from '../../../styles/landing.module.css';
 
 
 
-interface PageProps {
+export default async function BuildDetail({
+  params,
+  searchParams,
+}: {
   params: { slug: string };
   searchParams: { section: string };
-}
-
-export default function BuildDetail({ params, searchParams }: PageProps) {
-  const { slug } = params;
-  const section = searchParams.section;
-  const { content, data } = readBuild(section, slug);
+}) {
+  const { slug } = await params;
+  const section = await searchParams.section;
+  const { content, data } = await readBuild(section, slug);
 
 
   return (
