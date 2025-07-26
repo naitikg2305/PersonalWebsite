@@ -1,16 +1,22 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '../../../styles/landing.module.css';
 
-export default function InterestDetail({ params }: { params: { slug: string } }) {
-  const filePath = path.join(process.cwd(), 'public', 'content', 'interests', `${params.slug}.md`);
-  const content = fs.readFileSync(filePath, 'utf-8');
+export default async function InterestDetail({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+
+  const filePath = path.join(process.cwd(), 'public', 'content', 'interests', `${slug}.md`);
+  const content = await fs.readFile(filePath, 'utf-8'); // ✅ async read
 
   return (
     <div className={styles.projectDetail}>
-      <h1>{params.slug}</h1>
+      <h1>{slug}</h1>
       <div className={styles.markdownContent}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
