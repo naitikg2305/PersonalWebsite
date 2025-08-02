@@ -6,9 +6,12 @@ dates: "Summer 2024"
 location: "Hybrid"
 slug: "zillion"
 summaryPoints:
-  - Built a vector search system from SharePoint files using OpenAI & Hugging Face.
-  - Designed OCR + delta-updating for large-scale indexing.
-  - Integrated a chatbot interface with metadata-rich search output.
+  -  Built a production-grade vector search system over SharePoint repositories using OpenAI, Hugging Face, and ChromaDB.
+  - Designed the ingestion pipeline with OCR for image-based PDFs and delta updating to index only modified subfolders/files.
+  - Implemented delta logic from scratch to reduce update time and optimize large-scale document vectorization.
+  - Integrated a ChatGPT-powered chatbot that returns semantic matches with full file metadata and exact SharePoint location.
+  - Enabled human-style search, for example, “I remember what they looked like, not their name” — the system can return matches based on described context (e.g. medical records with facial resemblance).
+
 ---
 
 # 🏢 Zillion Technologies — Software Engineering Intern  
@@ -70,5 +73,10 @@ This wasn’t a sandbox or experimental task — it was a **production-grade, cl
 - Techniques for **delta updating** in vector databases to maintain efficiency and scalability  
 - Integration of **OCR** pipelines for multi-format document ingestion  
 - End-to-end system design for AI-powered document search
+
+---
+## 🧠 Example Use Case
+
+Imagine a hospital staff member trying to locate a patient’s medical records — but they don’t remember the patient’s name, only their facial features or a vague description. With our AI-powered semantic search system, they can input that contextual information and receive the most relevant matches. The system parses embeddings to infer meaning, then returns metadata-rich file locations from SharePoint. This kind of retrieval bridges human memory with structured enterprise storage.
 
 ---

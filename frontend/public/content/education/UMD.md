@@ -2,7 +2,7 @@
 title: "University of Maryland"
 order: 1
 company: "University of Maryland"
-dates: "Aug 2021 – May 2025 (Expected)"
+dates: "Aug 2021 – May 2025"
 location: "College Park, MD"
 slug: "university-of-maryland"
 summaryPoints:
