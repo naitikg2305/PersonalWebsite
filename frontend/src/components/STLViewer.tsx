@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
-import { OrbitControls, Bounds, useBounds } from '@react-three/drei';
+import { OrbitControls, Bounds } from '@react-three/drei';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { Suspense, useMemo, useRef } from 'react';
 import { BufferGeometry, Group } from 'three';

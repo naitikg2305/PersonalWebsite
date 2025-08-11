@@ -1,7 +1,7 @@
 // components/FeaturedSection.tsx
 'use client';
 
-import Link from 'next/link';
+
 import { Project } from '@/types/project';
 import ProjectCard from './ProjectCard'; // ✅ reuse existing card
 import styles from '../styles/landing.module.css';

@@ -126,7 +126,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
   <FeaturedSection featuredProjects={featuredProjects} />
 </section>
           <div className={styles.terminal}>
-            <div className={styles.terminalHeader}>"</div>
+            <div className={styles.terminalHeader}>&quot;&quot;</div>
             <div className={styles.terminalBody}>
               
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
