@@ -2,6 +2,7 @@ import { readProject } from '../../../lib/readProject';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '../../../styles/landing.module.css';
+import STLViewer from '../../../components/STLViewer';
 
 export default async function ProjectDetailPage({
   params,
@@ -33,6 +34,11 @@ export default async function ProjectDetailPage({
           />
         </div>
       )}
+      {data.stlCard && (
+  <div style={{ width: '100%', height: '400px', margin: '2rem 0' }}>
+    <STLViewer url={data.stlCard} height={400} controls={true} zoom={true} />
+  </div>
+)}
 
       <p className={styles.projectSummary}>{data.summary}</p>
 

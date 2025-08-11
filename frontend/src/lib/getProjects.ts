@@ -15,10 +15,19 @@ export async function getProjects(): Promise<Project[]> {
         .map(async (folder) => {
           const folderPath = path.join(projectsDir, folder.name);
           const indexPath = path.join(folderPath, 'index.md');
+          const cardStlPath = path.join(folderPath, 'card.stl');
 
           try {
             const file = await fs.readFile(indexPath, 'utf-8');
             const { data } = matter(file);
+            let stlCard = '';
+            try {
+              await fs.access(cardStlPath);
+              stlCard = `/content/projects/Featured/${folder.name}/card.stl`;
+            } catch {
+              // No STL file → leave as empty string
+              stlCard = '';
+            }
 
             return {
               title: data.title || folder.name,
@@ -28,7 +37,7 @@ export async function getProjects(): Promise<Project[]> {
               image: `/content/projects/Featured/${folder.name}/image.jpg`,
               pdfs: data.pdfs || [],
               stls: data.stls || [],
-              stlCard: data.stlCard || '',
+              stlCard,
               docs: data.docs || [],
               youtube: data.youtube || '',
               github: data.github || '',

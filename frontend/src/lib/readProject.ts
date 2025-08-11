@@ -14,6 +14,14 @@ export async function readProject(slug: string): Promise<{
   const indexPath = path.join(basePath, decodeURIComponent(slug), 'index.md');
   const file = await fs.readFile(indexPath, 'utf-8');
   const { data, content } = matter(file);
+  let stlCard = '';
+  try {
+    await fs.access(path.join(basePath, slug, 'card.stl'));
+    stlCard = `/content/projects/Featured/${slug}/card.stl`;
+  } catch {
+    // no card.stl found, leave as ''
+    stlCard = '';
+  }
 
   return {
     data: {
@@ -24,7 +32,7 @@ export async function readProject(slug: string): Promise<{
       image: `/content/projects/Featured/${slug}/image.jpg`,
       pdfs: data.pdfs || [],
       stls: data.stls || [],
-      stlCard: `/content/projects/Featured/${slug}/card.stl` ,
+      stlCard,
       docs: data.docs || [],
       youtube: data.youtube || '',
       github: data.github || '', // ✅ include if used
