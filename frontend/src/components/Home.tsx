@@ -6,12 +6,15 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { HiOutlineMail } from "react-icons/hi";
+import FeaturedSection from './FeaturedSection';
+// import { getFeaturedProjects } from '@/lib/getFeaturedProjects';
 
 import WorkExperienceSection from './WorkExperienceSection';
 import EducationSection from './EducationSection'; // new
 import ChatbotButton from './ChatbotButton';
 import ChatSection from './ChatSection';
 import Link from 'next/link';
+import { Project } from '@/types/project';
 
 type Experience = {
   title: string;
@@ -25,9 +28,10 @@ type Experience = {
 interface HomeProps {
   workExperiences: Experience[];
   educations: Experience[];
+  featuredProjects: Project[];
 }
 
-export default function Home({ workExperiences, educations }: HomeProps) {
+export default function Home({ workExperiences, educations, featuredProjects  }: HomeProps) {
   const name = 'Naitik Gupta';
   const quote = 'Decode the world to build it better.';
 
@@ -114,11 +118,17 @@ export default function Home({ workExperiences, educations }: HomeProps) {
             <div className={styles.quote}>{quote}</div>
           )}
         </div>
+        
+        
 
         <div className={styles.contentContainer} id="about">
+          <section id="featured">
+  <FeaturedSection featuredProjects={featuredProjects} />
+</section>
           <div className={styles.terminal}>
-            <div className={styles.terminalHeader}>about.md</div>
+            <div className={styles.terminalHeader}>"</div>
             <div className={styles.terminalBody}>
+              
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {aboutContent}
               </ReactMarkdown>
@@ -126,6 +136,8 @@ export default function Home({ workExperiences, educations }: HomeProps) {
             </div>
           </div>
         </div>
+        
+        
 
         <WorkExperienceSection experiences={workExperiences} />
         <EducationSection educations={educations} /> {/* NEW */}

@@ -28,6 +28,7 @@ export async function getProjects(): Promise<Project[]> {
               image: `/content/projects/Featured/${folder.name}/image.jpg`,
               pdfs: data.pdfs || [],
               stls: data.stls || [],
+              stlCard: data.stlCard || '',
               docs: data.docs || [],
               youtube: data.youtube || '',
               github: data.github || '',

@@ -31,6 +31,11 @@
   color: #00ff00;
   text-shadow: none;
 }
+.featuredSection {
+  padding: 4rem 2rem;
+  background: transparent; /* so background image shows through */
+}
+
 
 .name {
   display: inline-block;

@@ -1,5 +1,6 @@
 ---
 title: "NaviGatr: AI Assitance for Visually Impaired"
+order: 1
 date: "2025-05-20"
 tags: ["AI", "Computer Vision", "Firmware", "Embedded", "Hardware"]
 youtube: "https://www.youtube.com/embed/RDT_3vyE_UA"          # optional
@@ -9,6 +10,7 @@ github: https://github.com/naitikg2305/NaviGatr/tree/pi_main
 
 pdfs: ["./Final_Report.pdf", "./Poster.pdf", "./Project_Summary.pdf", "./Slides.pdf"]  # optional
 stls: [ "./headset.stl", "./fan_Screen_Top.stl"]          # optional
+stlCard: "content/projects/Featured/NaviGatr/card.stl"
 docs: ["./3d_Design.md", "./linux_Commands.md", "./hardware_Linux.md", "./wiring.md"]     # optional – sub-markdowns
 ---
 

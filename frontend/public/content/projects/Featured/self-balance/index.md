@@ -1,5 +1,6 @@
 ---
 title: "Self-balancing Robot using PID control"
+order: 2
 date: "2025-05-20"
 tags: ["PID Control", "IOT"]
 summary: "This website showcases the development, implementation, and final results of our autonomous two-wheeled balancing robot."
@@ -8,7 +9,7 @@ github: https://github.com/naitikg2305/Self-Balancing-Robot
 featured: true   # only include if it's a featured project
 
 
-stls: ["./wheel.stl"]
+stls: ["content/projects/Featured/self-balance/wheel.stl"]
 excels: ["./data/PD_kp3_kd0.25.csv","./data/PDkp3kd250.csv","./data/PDkp3kd650_final.csv"]
 docs: ["./proposal.docx", "./report.docx","./shopping.docx"]
 ---

@@ -24,6 +24,7 @@ export async function readProject(slug: string): Promise<{
       image: `/content/projects/Featured/${slug}/image.jpg`,
       pdfs: data.pdfs || [],
       stls: data.stls || [],
+      stlCard: `/content/projects/Featured/${slug}/card.stl` ,
       docs: data.docs || [],
       youtube: data.youtube || '',
       github: data.github || '', // ✅ include if used
