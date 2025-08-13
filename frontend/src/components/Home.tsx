@@ -15,6 +15,9 @@ import ChatbotButton from './ChatbotButton';
 import ChatSection from './ChatSection';
 import Link from 'next/link';
 import { Project } from '@/types/project';
+// add this import with your other icons
+import { HiOutlineDocumentText } from "react-icons/hi";
+
 
 type Experience = {
   title: string;
@@ -96,6 +99,18 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
               </a>
               <a href="mailto:naitikg2305@gmail.com" style={{ color: '#00ff00' }}>
                 <HiOutlineMail />
+              </a>
+              <a
+                href="/resume.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Resume (PDF)"
+                title="Resume (PDF)"
+                style={{ color: '#e5e7eb' }} 
+    >
+      <HiOutlineDocumentText />
+
+
               </a>
               <ChatbotButton />
             </div>
