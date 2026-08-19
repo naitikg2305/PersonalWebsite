@@ -52,7 +52,7 @@ When I joined Zillion Technologies as an intern, most interns were assigned expl
   - Took over existing implementation and significantly improved performance and structure
   - Enhanced secure auth (secret ID, secret key, user token), recursive file navigation, large-volume handling
 - **Vector Embedding for Semantic Search**
-  - Designed pipeline for document content (OCR for image-based PDFs) → vector database
+  - Designed pipeline for document content (OCR for image-based PDFs) to vector database
   - Used `all-MiniLM-L6-v2` transformer for embeddings
 - **Chatbot Interface**
   - Integrated OpenAI ChatGPT for conversational queries
@@ -89,8 +89,6 @@ Worked on an entirely new feature for Zecured: the Admin Panel. The panel consis
   - Two-step approval: PO approval + Manager approval
   - Both approvals = green light; any rejection = red light
   - Clear visibility into approval status across the workflow
-
----
 
 #### What I learned (Zecured / IAM)
 

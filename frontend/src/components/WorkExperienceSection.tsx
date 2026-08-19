@@ -15,13 +15,37 @@ export default function WorkExperienceSection({ experiences }: Props) {
 
       {experiences.map((exp) => (
         <div key={exp.slug} className={styles.experienceCard}>
-          <h3>{exp.title} — {exp.company}</h3>
+          <h3>{exp.positions?.length ? exp.company : `${exp.title} — ${exp.company}`}</h3>
           <p><em>{exp.dates} • {exp.location}</em></p>
-          <ul>
-            {exp.summaryPoints.map((pt, i) => (
-              <li key={i}>{pt}</li>
-            ))}
-          </ul>
+          {exp.positions && exp.positions.length > 0 ? (
+            <div className={styles.positionsList}>
+              {exp.positions.map((pos, posIdx) => (
+                <div key={posIdx} className={styles.positionBlock}>
+                  <h4>{pos.role} — {pos.dates}</h4>
+                  <ul>
+                    {pos.bullets.map((b, i) => (
+                      <li key={i}>
+                        <strong>{b.main}</strong>
+                        {b.sub && b.sub.length > 0 && (
+                          <ul>
+                            {b.sub.map((s, j) => (
+                              <li key={j}>{s}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ul>
+              {exp.summaryPoints.map((pt, i) => (
+                <li key={i}>{pt}</li>
+              ))}
+            </ul>
+          )}
           <Link href={`/experience/${exp.slug}`}>
             Read more →
           </Link>

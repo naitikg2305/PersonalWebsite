@@ -1,6 +1,6 @@
 ---
 title: "Student Ambassador"
-order : 3
+order: 4
 company: "Clark School of Engineering"
 dates: "2022–2023"
 location: "University of Maryland"

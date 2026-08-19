@@ -129,6 +129,8 @@
 
 .experienceCard h3 {
   color: #00ff00;
+  font-size: 1.4rem;
+  font-weight: 600;
   margin-bottom: 0.25rem;
 }
 
@@ -145,6 +147,37 @@
 .experienceCard li {
   margin-bottom: 0.5rem;
   color: #ddd;
+}
+
+/* LinkedIn-style positions with sub-bullets on cards */
+.positionsList {
+  margin-top: 0.5rem;
+}
+
+.positionBlock {
+  margin-bottom: 1.25rem;
+}
+
+.positionBlock:last-of-type {
+  margin-bottom: 0.5rem;
+}
+
+.experienceCard .positionBlock h4 {
+  color: #00ff00;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.experienceCard .positionBlock ul {
+  margin-left: 1rem;
+  margin-bottom: 0;
+}
+
+.experienceCard .positionBlock ul ul {
+  list-style-type: circle;
+  margin-left: 1.25rem;
+  margin-top: 0.2rem;
 }
 
 .experienceCard a {
@@ -182,6 +215,37 @@
   overflow-x: auto;
 }
 
+/* LinkedIn-style nested sub-bullets on detail pages */
+.markdownContent ul {
+  margin-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdownContent ul ul {
+  margin-left: 1.5rem;
+  margin-top: 0.25rem;
+  list-style-type: circle;
+}
+
+.markdownContent ul ul ul {
+  list-style-type: square;
+}
+
+.markdownContent li {
+  margin-bottom: 0.35rem;
+}
+
+.markdownContent li > strong {
+  color: #9cdcfe;
+}
+
+.markdownContent h3 {
+  color: #dcdcaa;
+  font-size: 1.1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .projectGridPage {
   padding: 2rem;
 }
@@ -206,11 +270,19 @@
   overflow: hidden;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.2s;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .projectCard:hover {
-  transform: scale(1.02);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.5),
+    0 6px 12px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 0, 0.15);
+  border-color: rgba(0, 255, 0, 0.3);
 }
 
 .projectImageWrapper {
