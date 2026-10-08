@@ -13,6 +13,7 @@ import WorkExperienceSection from './WorkExperienceSection';
 import EducationSection from './EducationSection'; // new
 import ChatbotButton from './ChatbotButton';
 import ChatSection from './ChatSection';
+import BootSequence from './BootSequence';
 import Link from 'next/link';
 import { Project } from '@/types/project';
 // add this import with your other icons
@@ -43,13 +44,15 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
   const [nameIndex, setNameIndex] = useState(0);
   const [showQuote, setShowQuote] = useState(false);
   const [aboutContent, setAboutContent] = useState('');
+  const [booted, setBooted] = useState(false); // name types only after the boot intro
   const [showScrollHint, setShowScrollHint] = useState(false);
 
   // After 5s on the landing screen, start nudging the name up to reveal a scroll hint
   useEffect(() => {
+    if (!booted) return;
     const timeout = setTimeout(() => setShowScrollHint(true), 5000);
     return () => clearTimeout(timeout);
-  }, []);
+  }, [booted]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -67,6 +70,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
   }, []);
 
   useEffect(() => {
+    if (!booted) return;
     if (nameIndex < name.length) {
       const timeout = setTimeout(() => setNameIndex(nameIndex + 1), 150);
       return () => clearTimeout(timeout);
@@ -74,7 +78,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
       const quoteTimeout = setTimeout(() => setShowQuote(true), 400);
       return () => clearTimeout(quoteTimeout);
     }
-  }, [nameIndex]);
+  }, [nameIndex, booted]);
 
   return (
     <div className={styles.pageWrapper}>
@@ -83,7 +87,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
         style={{ transform: `translateY(${scrollY * 0.5}px)` }}
       />
 
-      {!scrolled && (
+      {!scrolled && booted && (
         <div className={styles.floatingImageWrapper}>
           <img
             src="/profile.jpg"
@@ -94,6 +98,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
       )}
 
       <div className={styles.container}>
+        <BootSequence onDone={() => setBooted(true)} />
         {scrolled && (
           <div className={styles.navbar}>
             <div className={styles.navTitle} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

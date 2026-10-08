@@ -29,6 +29,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ response: 'Please ask a question.' }, { status: 400 });
   }
 
+  // Local dev: point at backend-chatbot/local_server.py instead of the deployed Lambda.
+  if (process.env.CHATBOT_LOCAL_URL) {
+    try {
+      const res = await fetch(`${process.env.CHATBOT_LOCAL_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query.slice(0, MAX_QUERY_CHARS) }),
+      });
+      return NextResponse.json(await res.json(), { status: res.status });
+    } catch (err) {
+      console.error('local chatbot error', err);
+      return NextResponse.json({ response: 'Local chatbot server is not running.' }, { status: 502 });
+    }
+  }
+
   try {
     const result = await lambda.send(
       new InvokeCommand({

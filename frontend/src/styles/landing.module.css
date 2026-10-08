@@ -1,9 +1,8 @@
 .container {
+  position: relative;
+  isolation: isolate; /* lets the boot terminal sit between the background image and the content */
   min-height: 100vh;
-  background-image: url('image1.png'); /* Replace with your image */
-  background-size: cover;
-  background-attachment: fixed;
-  background-position: center;
+  background: #000; /* plain black: the faded boot terminal is the background */
   color: #00ff00;
   font-family: monospace;
   padding: 2rem;

@@ -3,7 +3,7 @@
 import base64
 import json
 
-from chatbot import answer
+from chatbot import answer_with_sources
 
 
 def _json(status: int, payload: dict) -> dict:
@@ -24,7 +24,7 @@ def handler(event, context):
         return _json(400, {"response": "Invalid request."})
 
     try:
-        return _json(200, {"response": answer(question)})
+        return _json(200, answer_with_sources(question))
     except Exception as e:  # log for CloudWatch, keep internals out of the response
         print(f"chat error: {e!r}")
         return _json(500, {"response": "Sorry, something went wrong. Please try again."})
