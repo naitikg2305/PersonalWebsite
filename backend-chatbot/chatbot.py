@@ -121,7 +121,7 @@ def answer(question: str) -> str:
 
     # Haiku 5.5 thinks by default; low effort keeps chat answers fast and cheap.
     # Older models (Haiku 4.5) don't accept output_config.effort, so only send it to 5.x.
-    extra = {"output_config": {"effort": "low"}} if "-5-" in MODEL_ID else {}
+    extra = {"output_config": {"effort": "low"}} if re.search(r"claude-[a-z]+-5-", MODEL_ID) else {}
     response = _get_client().messages.create(
         model=MODEL_ID,
         max_tokens=1024,
