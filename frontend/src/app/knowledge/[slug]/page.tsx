@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import matter from 'gray-matter';
 import styles from '../../../styles/landing.module.css';
 
 export default async function KnowledgeDetail({
@@ -12,11 +13,12 @@ export default async function KnowledgeDetail({
   const { slug } = await params;
 
   const filePath = path.join(process.cwd(), 'public', 'content', 'knowledge', `${slug}.md`);
-  const content = await fs.readFile(filePath, 'utf-8');
+  const raw = await fs.readFile(filePath, 'utf-8');
+  const { data, content } = matter(raw);
 
   return (
     <div className={styles.projectDetail}>
-      <h1>{slug}</h1>
+      <h1>{data.title || slug}</h1>
       <div className={styles.markdownContent}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
