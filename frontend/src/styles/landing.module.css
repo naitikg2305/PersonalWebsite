@@ -152,10 +152,35 @@
 }
 
 .experienceSection {
-  background-color: #000; /* black */
-  color: #fff;            /* white */
+  background: transparent; /* the live log shows between the job panels */
+  color: #fff;
   padding: 2rem;
-  
+}
+
+/* each job is its own black panel, like the about terminal */
+.experienceSection .experienceCard {
+  background-color: #000000eb;
+  border: 1px solid #00ff0055;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 0 12px #00ff0026;
+}
+
+.experienceSection > h2 {
+  display: inline-block;
+  background-color: #000000eb;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+}
+
+/* chat gets the same panel treatment */
+.chatPanel {
+  background-color: #000000eb;
+  border: 1px solid #00ff0055;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 0 12px #00ff0026;
+  margin: 2rem;
 }
 
 .experienceCard {

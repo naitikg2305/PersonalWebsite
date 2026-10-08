@@ -178,7 +178,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
         <WorkExperienceSection experiences={workExperiences} />
         <EducationSection educations={educations} /> {/* NEW */}
 
-        <div id="chat">
+        <div id="chat" className={styles.chatPanel}>
           <ChatSection />
         </div>
       </div>
