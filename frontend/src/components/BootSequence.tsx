@@ -212,7 +212,7 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
       : {
           zIndex: phase === 'dissolve' ? 3000 : -1,
           backgroundColor: 'transparent',
-          opacity: 1, // log stays fully visible; content sits on solid black panels above it
+          opacity: 0.5, // constant 50%: content sits on solid black panels above it
           filter: 'none',
         };
 
