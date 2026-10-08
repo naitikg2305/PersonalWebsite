@@ -15,6 +15,7 @@ import ChatbotButton from './ChatbotButton';
 import ChatSection from './ChatSection';
 import BootSequence from './BootSequence';
 import CareerTimeline from './CareerTimeline';
+import GitGraph from './GitGraph';
 import Link from 'next/link';
 import { Project } from '@/types/project';
 // add this import with your other icons
@@ -160,6 +161,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
 
         <div className={styles.contentContainer} id="about">
           <CareerTimeline />
+          <GitGraph />
           <section id="featured">
   <FeaturedSection featuredProjects={featuredProjects} />
 </section>

@@ -61,15 +61,20 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
   const [scroll, setScroll] = useState(0);
   const [focus, setFocus] = useState(0); // 0..1: how much of the timeline section is on screen
 
-  // dim the log while the career timeline is in view, so it reads cleanly
+  // dim the log while the timeline / git graph is in view, so they read cleanly
   useEffect(() => {
-    const el = document.getElementById('timeline');
-    if (!el) return;
+    const ratios = new Map<string, number>();
     const io = new IntersectionObserver(
-      ([entry]) => setFocus(Math.min(1, entry.intersectionRatio / 0.5)), // full dim once ~half of it is visible
+      (entries) => {
+        entries.forEach((e) => ratios.set(e.target.id, e.intersectionRatio));
+        setFocus(Math.min(1, Math.max(0, ...ratios.values()) / 0.5)); // full dim once ~half is visible
+      },
       { threshold: Array.from({ length: 21 }, (_, i) => i / 20) },
     );
-    io.observe(el);
+    ['timeline', 'gitgraph'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
     return () => io.disconnect();
   }, []);
 
