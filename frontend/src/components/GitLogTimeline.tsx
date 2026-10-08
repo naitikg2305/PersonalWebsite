@@ -1,8 +1,8 @@
 'use client';
 
 // v3.5: everything on one vertical `git log --graph`, newest on top. The graph lives in a narrow
-// gutter on the far right (main = career on the right edge, project branches to its left). From
-// each commit dot a horizontal wire runs left to its card. Cards form an organized collage across
+// gutter on the far left (main = career on the left edge, project branches to its right). From
+// each commit dot a horizontal wire runs right to its card. Cards form an organized collage across
 // the full width: each card's top sits at its commit (so time still reads top to bottom), cards in
 // different columns may overlap vertically, and a wire simply runs under any card in its way.
 // A filter fades everything but the chosen track.
@@ -125,9 +125,9 @@ const COL_GAP = 18;
 const ROW_GAP = 16; // vertical space between cards in the same column
 const MIN_STEP = 34; // next commit is at least this far below the previous one (room for fork curves)
 
-/** The whole graph as one SVG, mirrored: main on the right edge, branches to its left. */
+/** The whole graph as one SVG: main on the left edge, branches to its right. */
 function Graph({ ys, width, height }: { ys: number[]; width: number; height: number }) {
-  const laneX = (lane: number) => width - 10 - lane * LANE_W;
+  const laneX = (lane: number) => 10 + lane * LANE_W;
   const mx = laneX(0);
   const dotY = (row: number) => ys[row] + DOT_Y;
   const last = ROWS.length - 1;
@@ -289,7 +289,7 @@ export default function GitLogTimeline() {
   const [placed, setPlaced] = useState<Placed[] | null>(null);
 
   const cols = width >= 1000 ? 3 : width >= 640 ? 2 : 1;
-  const area = width - GUTTER - WIRE_GAP; // card area, left of the gutter
+  const area = width - GUTTER - WIRE_GAP; // card area, right of the gutter
   const colW = Math.max(0, (area - COL_GAP * (cols - 1)) / cols);
 
   // track the container width
@@ -349,23 +349,23 @@ export default function GitLogTimeline() {
           const color = isMain ? MAIN_COLOR : COLOR[r.kind];
           const dim = (filter === 'career' && !isMain) || (filter === 'projects' && isMain);
           const p = placed?.[i];
-          const left = p ? p.col * (colW + COL_GAP) : 0;
+          const left = GUTTER + WIRE_GAP + (p ? p.col * (colW + COL_GAP) : 0);
           const lane = isMain ? 0 : SPANS.find((s) => s.id === r.id)!.lane;
-          const dotX = width - 10 - lane * LANE_W;
+          const dotX = 10 + lane * LANE_W;
           return (
             <div key={`${r.date}-${r.title}`} className="transition-opacity duration-500" style={{ opacity: dim ? 0.12 : 1 }}>
               {p && (
                 <>
-                  {/* wire from the card's right edge to its commit dot */}
+                  {/* wire from the commit dot to the card's left edge */}
                   <div
                     className="absolute z-[1] h-[2px]"
-                    style={{ left: left + colW, top: p.top + DOT_Y - 1, width: dotX - left - colW, background: `linear-gradient(90deg, ${color}88, ${color})`, boxShadow: `0 0 4px ${color}66` }}
+                    style={{ left: dotX, top: p.top + DOT_Y - 1, width: left - dotX, background: `linear-gradient(90deg, ${color}, ${color}88)`, boxShadow: `0 0 4px ${color}66` }}
                   />
                   <span
                     className="absolute z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-black"
                     style={{ left: dotX, top: p.top + DOT_Y, width: isMain ? 13 : 11, height: isMain ? 13 : 11, borderColor: color, boxShadow: `0 0 8px ${color}aa` }}
                   />
-                  <span className="absolute z-[3] h-[9px] w-[9px] -translate-y-1/2 translate-x-1/2 rounded-full" style={{ left: left + colW - 9, top: p.top + DOT_Y, background: color, boxShadow: `0 0 6px ${color}` }} />
+                  <span className="absolute z-[3] h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left, top: p.top + DOT_Y, background: color, boxShadow: `0 0 6px ${color}` }} />
                 </>
               )}
               <div
@@ -375,9 +375,9 @@ export default function GitLogTimeline() {
                 className="absolute z-[2] transition-[top,left] duration-500"
                 style={{ left, top: p?.top ?? 0, width: colW }}
               >
-                <div className="mb-1 pr-3 text-right font-mono text-[10.5px] text-neutral-500">
-                  {!isMain && <span className="mr-2" style={{ color }}>branch: {r.id}</span>}
+                <div className="mb-1 pl-3 font-mono text-[10.5px] text-neutral-500">
                   {fmt(r.date)}
+                  {!isMain && <span className="ml-2" style={{ color }}>branch: {r.id}</span>}
                 </div>
                 <div className={dim ? 'pointer-events-none' : ''}>{isMain ? <MainCard c={r} /> : <ProjectCard p={r} />}</div>
               </div>
