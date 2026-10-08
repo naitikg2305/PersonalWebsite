@@ -372,26 +372,41 @@ export default function GitLogTimeline() {
       <div ref={boxRef} className="relative mt-8" style={{ height, visibility: placed ? 'visible' : 'hidden' }}>
         {placed && width > 0 && <Graph ys={ys} width={width} height={height} />}
         {/* Fixed layers, never interleaved per row (a faded row would otherwise form its own layer and
-            let its wire paint over other cards): wires (1) < cards (2) < hovered card (4); gutter dots (3)
-            never sit under a card. */}
-        {items.map(({ key, color, dim, p, left, dotX }) =>
-          p ? (
+            let its wire paint over other cards): wires (1) < cards (2) < gutter dots (3) < hovered card (4)
+            < the hovered card's own wire and dot (5, 6), so you can trace which line is whose. */}
+        {items.map(({ key, i, color, dim, p, left, dotX }) => {
+          if (!p) return null;
+          // hovering a card traces its wire: lifted above every card, brighter and thicker; others dim
+          const lit = hovered === i;
+          return (
             <div
               key={`w-${key}`}
-              className="absolute z-[1] h-[2px] transition-opacity duration-500"
-              style={{ left: dotX, top: p.top + DOT_Y - 1, width: left - dotX, opacity: dim ? 0.12 : 1, background: `linear-gradient(90deg, ${color}, ${color}88)`, boxShadow: `0 0 4px ${color}66` }}
+              className="absolute transition-all duration-200"
+              style={{
+                left: dotX,
+                top: p.top + DOT_Y - (lit ? 1.5 : 1),
+                height: lit ? 3 : 2,
+                width: left - dotX,
+                zIndex: lit ? 5 : 1,
+                opacity: dim ? 0.12 : hovered !== null && !lit ? 0.35 : 1,
+                background: lit ? color : `linear-gradient(90deg, ${color}, ${color}88)`,
+                boxShadow: lit ? `0 0 10px ${color}, 0 0 3px ${color}` : `0 0 4px ${color}66`,
+              }}
             />
-          ) : null,
-        )}
-        {items.map(({ key, isMain, color, dim, p, dotX }) =>
-          p ? (
+          );
+        })}
+        {items.map(({ key, i, isMain, color, dim, p, dotX }) => {
+          if (!p) return null;
+          const lit = hovered === i;
+          const size = (isMain ? 13 : 11) + (lit ? 5 : 0);
+          return (
             <span
               key={`d-${key}`}
-              className="absolute z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-black transition-opacity duration-500"
-              style={{ left: dotX, top: p.top + DOT_Y, width: isMain ? 13 : 11, height: isMain ? 13 : 11, opacity: dim ? 0.3 : 1, borderColor: color, boxShadow: `0 0 8px ${color}aa` }}
+              className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full border-2 transition-all duration-200"
+              style={{ left: dotX, top: p.top + DOT_Y, width: size, height: size, zIndex: lit ? 6 : 3, opacity: dim ? 0.3 : 1, borderColor: color, background: lit ? color : '#000', boxShadow: lit ? `0 0 14px ${color}` : `0 0 8px ${color}aa` }}
             />
-          ) : null,
-        )}
+          );
+        })}
         {items.map(({ key, r, i, isMain, color, dim, p, left }) => (
           <div
             key={key}
