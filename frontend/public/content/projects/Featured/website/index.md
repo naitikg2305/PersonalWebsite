@@ -1192,3 +1192,83 @@ _Last updated: 2025-07-23_
 
 ---
 
+
+# 🌿 UI Redesign (Oct 2026): Branches and Ideation
+
+In October 2026 I redesigned the site's UI by treating each idea as its own git branch. Every experiment branched from a working baseline, got built far enough to click through, and then was either kept (and branched from again) or left as a record. Nothing was merged to `main` until a direction won.
+
+```
+main ─────●──────────────────────────────────────────────────────────▶
+          │
+          ├── ui-v2      terminal-refined redesign (⌘K search, ask-ai drawer)
+          │
+          └── ui-v3 ──●──●──●──●  boot sequence + live terminal + timeline
+                      │
+                      ├── ui-v3.1  A: horizontal git graph (career + projects)
+                      │     │
+                      │     └── ui-v3.4  vertical git log + board + navbar chat
+                      │           │
+                      │           └── ui-v3.5  full-width collage board  ← chosen
+                      │
+                      ├── ui-v3.2  B: mission-control swimlanes
+                      └── ui-v3.3  C: year-by-year wall
+```
+
+## v2: terminal-refined redesign
+
+A cleaner, more conventional portfolio: a sticky header with a `naitik@gupta:~$` prompt, a hero with an "ask anything" input, a projects bento grid, a vertical timeline, a ⌘K command palette that searches every page on the site, and an "ask ai" chat drawer that cites the pages its answers come from.
+
+**What I kept from it:** the prompt-style title, the ⌘K palette, and the chat behaviour (multi-turn, typed-out answers, sources as links). **What I dropped:** the overall look. It was polished but felt like a template rather than mine.
+
+## v3: the live terminal (the baseline)
+
+v3 went the other way and leaned into the terminal:
+
+- **Boot sequence.** On first visit a black screen streams a faithful deploy of this very site (`git push`, `next build`, embedding the docs, building the Lambda image, `amplify deploy`), then dissolves into the page. Any key skips it, and reduced-motion users skip it entirely.
+- **A live background terminal.** After the boot, the terminal stays behind the page and prints only real activity from your session: clicks, network requests (from the browser's performance timing), sections scrolling into view, and the chatbot's real backend trace (Lambda cold/warm start, DynamoDB daily-cap count, retrieval time, Bedrock tokens). It runs on every page, including the markdown and STL viewers.
+- **A career timeline** after the hero. It went through several layouts on this branch: horizontal swimlanes, a "detective evidence board", then a clean floating line with dates on the line and blocks staggered above and below. The background dims to 95% while the timeline is on screen so it reads cleanly.
+
+v3 felt like mine, so the next question was how to show work experience *and* projects together, interlaced in time. That became three experiments, each on its own branch from v3.
+
+## v3.1 (experiment A): a git graph
+
+Career on `main`, every project as a branch that forks off and merges back, laid out horizontally. Work experience and projects finally lived on one picture, and the metaphor fit a software engineer's site. The separate career timeline was dropped because the graph covered it.
+
+## v3.2 (experiment B): mission-control swimlanes
+
+Parallel lanes (work, education, AI, software, hardware) on a shared time axis, like a mission-control board. Good for seeing what overlapped, but it read as a dashboard more than a story, and label collisions needed careful packing.
+
+## v3.3 (experiment C): a year wall
+
+One column per year, with everything from that year stacked inside. Easy to scan, but it lost the sense of things starting, running in parallel, and finishing.
+
+## v3.4: a vertical git log
+
+The git graph from v3.1 won, but turned vertical like `git log --graph --all`, newest on top:
+
+- The graph lines sit in a narrow gutter on the far left (green `main` for work and education, colored branches for AI, software and hardware projects), with fork and merge curves and ▲ arrows on ongoing projects.
+- From each commit dot a horizontal wire runs out to its card. Cards are staggered (deterministic pseudo-random offsets) so it reads like a pinboard.
+- Project cards look like the old featured cards: NaviGatr shows its 3D-printed headset as a live STL model; the rover, the self-balancing robot and this site show cover images.
+- A filter (everything / education & experience / projects) fades whatever isn't selected.
+- The old work-experience section moved to its own `/experience` page, and the homepage became just the name and the board.
+- The navbar got the v2 pieces back, restyled for v3: the `naitik@gupta:~$` prompt, a search icon for the ⌘K palette, and an inline ask bar. Asking drops a black chat panel down from under the navbar. It can be maximized, keeps the conversation for the browser session, and sends the last few turns to the chatbot as memory, so follow-up questions work.
+
+## v3.5: the full-width collage (chosen)
+
+v3.5 keeps everything from v3.4 and changes how the cards use space:
+
+- **A time-ordered collage.** Cards fill the full width in columns (3 on desktop, 2 on tablets, 1 on phones). Each card's top sits at its commit, so the board still reads top to bottom in time. Cards never overlap, but cards in different columns overlap vertically, which makes it a collage instead of a list. Card heights are measured in the browser and the layout is recomputed on resize.
+- **Wires run under cards** when one is in the way. **Hovering a card traces its wire:** the wire lifts above every card and glows, its commit dot fills in, and the other wires dim, so you can follow which line is whose.
+- **The board draws in fixed layers** (wires, then cards, then dots, then the hovered card), so a faded card can never let its wire paint over another card.
+- **The STL model spins by default and follows the mouse** over its card, turning and tilting as if you were dragging it.
+- **The About section moved into the terminal.** After the name types in, the background terminal runs `cat about.md` and types the About text out as one block, which stays in the log.
+
+I tried v3.5 with the graph on the right edge too, then moved it back to the left. Left reads more naturally, like a real `git log`.
+
+## What I learned from working this way
+
+- **Branch per idea, not per feature.** Each experiment was cheap because it started from a working baseline, and I could switch between them on the dev server to compare side by side.
+- **Keep the losers.** v3.2 and v3.3 didn't win, but they made it clear *why* the git graph did: it shows things starting, overlapping and finishing, which is how my work actually happened.
+- **Steal from your own past versions.** v2 lost as a whole, but its palette, chat and navbar prompt came back in v3.4 once they were restyled to fit.
+
+_Last updated: 2026-10-08_
