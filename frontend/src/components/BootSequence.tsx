@@ -55,6 +55,14 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
   const [typing, setTyping] = useState(''); // current command being typed
   const [bar, setBar] = useState(-1); // progress 0..100 of the current bar line
   const doneRef = useRef(false);
+  const [scroll, setScroll] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => setScroll(window.scrollY);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const finish = useCallback(
@@ -205,19 +213,32 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
   }, [lines, typing, bar]);
 
   // inline styles: the dissolve values must always apply (no reliance on generated utility classes)
+  // After the intro the log stays readable at the top of the page and fades as the visitor scrolls.
+  const fade = Math.min(1, scroll / (typeof window === 'undefined' ? 800 : window.innerHeight * 0.9)); // 0 at top → 1 after ~a screen
   const layer: React.CSSProperties =
     phase === 'boot'
       ? { zIndex: 3000, backgroundColor: '#000', opacity: 1, filter: 'none' }
-      : { zIndex: phase === 'dissolve' ? 3000 : -1, backgroundColor: 'transparent', opacity: 0.12, filter: 'blur(1px)' };
+      : {
+          zIndex: phase === 'dissolve' ? 3000 : -1,
+          backgroundColor: 'transparent',
+          opacity: 0.75 - fade * 0.65, // 0.75 at top → 0.10 scrolled
+          filter: `blur(${(fade * 1.2).toFixed(2)}px)`,
+        };
 
   return (
     <div
       aria-hidden={phase !== 'boot'}
       className="pointer-events-none fixed inset-0"
-      style={{ ...layer, transition: 'opacity 1.4s ease-out, filter 1.4s ease-out, background-color 1.4s ease-out' }}
+      style={{
+        ...layer,
+        transition:
+          phase === 'backdrop'
+            ? 'opacity 0.15s linear, filter 0.15s linear' // follow the scroll closely
+            : 'opacity 1.4s ease-out, filter 1.4s ease-out, background-color 1.4s ease-out',
+      }}
     >
       <div ref={scrollRef} className="h-full overflow-hidden px-5 py-6 text-left font-mono text-[13px] leading-6 sm:px-8 sm:text-sm">
-        <div className="flex min-h-full flex-col justify-end">
+        <div className="flex min-h-full flex-col justify-end md:max-w-[56%]">
           {lines.map((l, i) => (
             <div key={i} className={`whitespace-pre-wrap break-all ${color[l.kind]}`}>
               {prefix[l.kind]}

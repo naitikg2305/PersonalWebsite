@@ -11,7 +11,7 @@
 .nameContainer {
   position: fixed;
   top: 40%;
-  left: 50%;
+  left: 64%; /* sits right of the live log, which runs down the left side */
   transform: translate(-50%, -50%);
   font-size: 4rem;
   font-weight: bold;
