@@ -107,11 +107,51 @@ def retrieve(question: str, k: int = TOP_K) -> list[dict]:
     return list(results.values())[:k]
 
 
+DAILY_CAP_TABLE = os.environ.get("DAILY_CAP_TABLE")  # unset locally → no cap
+DAILY_CAP = int(os.environ.get("DAILY_CAP", "300"))
+BUSY_MESSAGE = (
+    "The chatbot has hit its daily limit. Please try again tomorrow, "
+    "or reach Naitik directly at naitikg2305@gmail.com."
+)
+
+
+def _under_daily_cap() -> bool:
+    """Atomically count today's chats; refuse once the cap is reached (hard ceiling on Bedrock spend)."""
+    if not DAILY_CAP_TABLE:
+        return True
+    import time
+
+    import boto3
+    from botocore.exceptions import ClientError
+
+    day = time.strftime("%Y-%m-%d", time.gmtime())
+    try:
+        boto3.client("dynamodb", region_name=REGION).update_item(
+            TableName=DAILY_CAP_TABLE,
+            Key={"day": {"S": day}},
+            UpdateExpression="ADD #n :one SET expires_at = :exp",
+            ConditionExpression="attribute_not_exists(#n) OR #n < :cap",
+            ExpressionAttributeNames={"#n": "count"},
+            ExpressionAttributeValues={
+                ":one": {"N": "1"},
+                ":cap": {"N": str(DAILY_CAP)},
+                ":exp": {"N": str(int(time.time()) + 7 * 86400)},  # TTL cleans old days
+            },
+        )
+        return True
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            return False
+        raise
+
+
 def answer(question: str) -> str:
     question = (question or "").strip()
     if not question:
         return "Please ask a question."
     question = question[:MAX_QUERY_CHARS]
+    if not _under_daily_cap():
+        return BUSY_MESSAGE
 
     chunks = retrieve(question)
     context = "\n\n".join(
