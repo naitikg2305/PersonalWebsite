@@ -1,44 +1,77 @@
-import os
+"""Build the chatbot's Chroma DB from the site's markdown content. Run locally, then commit chroma_db/.
+
+    .venv/bin/python embed.py
+
+Uses Chroma's built-in ONNX all-MiniLM-L6-v2, the same embedder the Lambda uses at query time.
+No AWS calls: embedding runs on this machine.
+"""
+
+import pathlib
+import re
+import shutil
+
 import chromadb
-from chromadb import PersistentClient
+
+from chatbot import COLLECTION, DB_DIR, embedding_function
+
+CONTENT_DIR = pathlib.Path(__file__).parent.parent / "frontend" / "public" / "content"
+CHUNK_CHARS = 1200
+OVERLAP_CHARS = 200
+
+FRONTMATTER = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 
 
-from chromadb.config import Settings
-from sentence_transformers import SentenceTransformer
-import markdown
-from bs4 import BeautifulSoup
+def parse(md: str) -> tuple[str, str]:
+    """Return (title, body) with YAML frontmatter stripped."""
+    title = ""
+    m = FRONTMATTER.match(md)
+    if m:
+        fields = dict(re.findall(r'^(title|company):\s*"?(.*?)"?\s*$', m.group(1), re.MULTILINE))
+        title = fields.get("title", "")
+        if fields.get("company") and fields["company"] not in title:
+            title = f"{fields['company']}: {title}"  # e.g. "Minfy Technologies: AI Engineer"
+        md = md[m.end():]
+    return title, md.strip()
 
-CONTENT_DIR = "../frontend/public/content"
-CHROMA_DIR = "chroma_db"
-COLLECTION_NAME = "site_docs"
-client = PersistentClient(path=CHROMA_DIR)
 
-#client = chromadb.Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory=CHROMA_DIR))
-model = SentenceTransformer("all-MiniLM-L6-v2")
+def chunk(text: str) -> list[str]:
+    """Paragraph-aware chunks of ~CHUNK_CHARS, with overlap so answers spanning a boundary survive."""
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+    chunks, current = [], ""
+    for p in paragraphs:
+        if current and len(current) + len(p) > CHUNK_CHARS:
+            chunks.append(current)
+            current = current[-OVERLAP_CHARS:] + "\n\n" + p
+        else:
+            current = f"{current}\n\n{p}" if current else p
+    if current:
+        chunks.append(current)
+    return chunks
 
-def extract_text_from_md(md_path):
-    with open(md_path, 'r', encoding='utf-8') as f:
-        html = markdown.markdown(f.read())
-        text = BeautifulSoup(html, "html.parser").get_text()
-        return text.strip()
 
-def embed_site_content():
-    if COLLECTION_NAME in [c.name for c in client.list_collections()]:
-        client.delete_collection(COLLECTION_NAME)
-    collection = client.create_collection(COLLECTION_NAME)
+def main():
+    shutil.rmtree(DB_DIR, ignore_errors=True)  # rebuild from scratch: no stale chunks
+    db = chromadb.PersistentClient(path=str(DB_DIR), settings=chromadb.Settings(anonymized_telemetry=False))
+    collection = db.create_collection(
+        COLLECTION, embedding_function=embedding_function(), metadata={"hnsw:space": "cosine"}
+    )
 
-    for root, _, files in os.walk(CONTENT_DIR):
-        for file in files:
-            if file.endswith(".md"):
-                path = os.path.join(root, file)
-                text = extract_text_from_md(path)
-                chunks = [text[i:i+500] for i in range(0, len(text), 500)]
-                embeddings = model.encode(chunks).tolist()
-                collection.add(documents=chunks, embeddings=embeddings, ids=[f"{os.path.relpath(path, CONTENT_DIR)}_{i}" for i in range(len(chunks))]
-)
+    ids, docs, metas = [], [], []
+    for path in sorted(CONTENT_DIR.rglob("*.md")):
+        rel = path.relative_to(CONTENT_DIR).as_posix()
+        title, body = parse(path.read_text(encoding="utf-8"))
+        title = title or path.stem.replace("-", " ")
+        for i, piece in enumerate(chunk(body)):
+            ids.append(f"{rel}#{i}")
+            docs.append(f"[{title}]\n{piece}")
+            metas.append({"source": rel, "title": title})
 
-    #client.persist()
-    print("✅ Vector DB built.")
+    for start in range(0, len(ids), 256):
+        collection.add(ids=ids[start:start + 256], documents=docs[start:start + 256], metadatas=metas[start:start + 256])
+
+    files = len({m["source"] for m in metas})
+    print(f"Embedded {len(ids)} chunks from {files} markdown files into {DB_DIR}")
+
 
 if __name__ == "__main__":
-    embed_site_content()
+    main()
