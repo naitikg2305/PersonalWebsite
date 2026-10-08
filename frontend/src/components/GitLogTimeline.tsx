@@ -13,6 +13,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { FaGithub } from 'react-icons/fa';
 
 const STLViewer = dynamic(() => import('./STLViewer'), { ssr: false });
+type PointerState = { x: number; y: number } | null;
 
 type Kind = 'software' | 'hardware' | 'ai';
 
@@ -236,6 +237,7 @@ function MainCard({ c }: { c: MainCommit }) {
 function ProjectCard({ p }: { p: ProjectCommit }) {
   const router = useRouter();
   const [hover, setHover] = useState(false);
+  const pointer = useRef<PointerState>(null); // drives the STL model without re-rendering
   const c = COLOR[p.kind];
   // a clickable div (not <a>) so the GitHub link inside isn't a nested anchor
   return (
@@ -245,14 +247,21 @@ function ProjectCard({ p }: { p: ProjectCommit }) {
       onClick={() => p.href && router.push(p.href)}
       onKeyDown={(e) => e.key === 'Enter' && p.href && router.push(p.href)}
       onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      onMouseLeave={() => {
+        setHover(false);
+        pointer.current = null;
+      }}
+      onMouseMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        pointer.current = { x: ((e.clientX - r.left) / r.width) * 2 - 1, y: ((e.clientY - r.top) / r.height) * 2 - 1 };
+      }}
       className="overflow-hidden rounded-lg border bg-[#0b0e0f] shadow-[0_6px_20px_rgba(0,0,0,0.7)] transition hover:-translate-y-1"
       style={{ borderColor: `${c}55`, cursor: p.href ? 'pointer' : 'default', boxShadow: hover ? `0 10px 24px rgba(0,0,0,.6), 0 0 18px ${c}33` : undefined }}
     >
       {/* media like the featured project cards: STL model (rotates on hover) or cover image */}
       {p.stl ? (
         <div className="bg-[#111]" style={{ height: 170 }}>
-          <STLViewer url={p.stl} height={170} hover={hover} controls={false} zoom={false} />
+          <STLViewer url={p.stl} height={170} spin pointer={pointer} controls={false} zoom={false} />
         </div>
       ) : p.image ? (
         <img src={p.image} alt={p.title} className="h-[150px] w-full object-cover" />
@@ -287,6 +296,7 @@ export default function GitLogTimeline() {
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [width, setWidth] = useState(0);
   const [placed, setPlaced] = useState<Placed[] | null>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
 
   const cols = width >= 1000 ? 3 : width >= 640 ? 2 : 1;
   const area = width - GUTTER - WIRE_GAP; // card area, right of the gutter
@@ -311,6 +321,23 @@ export default function GitLogTimeline() {
     cardRefs.current.forEach((el) => el && ro.observe(el));
     return () => ro.disconnect();
   }, [width, cols]);
+
+  const items = ROWS.map((r, i) => {
+    const isMain = r.type === 'main';
+    const p = placed?.[i];
+    const lane = r.type === 'main' ? 0 : SPANS.find((s) => s.id === r.id)!.lane;
+    return {
+      key: `${r.date}-${r.title}`,
+      r,
+      i,
+      isMain,
+      color: r.type === 'main' ? MAIN_COLOR : COLOR[r.kind],
+      dim: (filter === 'career' && !isMain) || (filter === 'projects' && isMain),
+      p,
+      left: GUTTER + WIRE_GAP + (p ? p.col * (colW + COL_GAP) : 0),
+      dotX: 10 + lane * LANE_W,
+    };
+  });
 
   const height = placed ? Math.max(...placed.map((p) => p.bottom)) + 24 : 0;
   const ys = placed?.map((p) => p.top) ?? [];
@@ -344,46 +371,47 @@ export default function GitLogTimeline() {
 
       <div ref={boxRef} className="relative mt-8" style={{ height, visibility: placed ? 'visible' : 'hidden' }}>
         {placed && width > 0 && <Graph ys={ys} width={width} height={height} />}
-        {ROWS.map((r, i) => {
-          const isMain = r.type === 'main';
-          const color = isMain ? MAIN_COLOR : COLOR[r.kind];
-          const dim = (filter === 'career' && !isMain) || (filter === 'projects' && isMain);
-          const p = placed?.[i];
-          const left = GUTTER + WIRE_GAP + (p ? p.col * (colW + COL_GAP) : 0);
-          const lane = isMain ? 0 : SPANS.find((s) => s.id === r.id)!.lane;
-          const dotX = 10 + lane * LANE_W;
-          return (
-            <div key={`${r.date}-${r.title}`} className="transition-opacity duration-500" style={{ opacity: dim ? 0.12 : 1 }}>
-              {p && (
-                <>
-                  {/* wire from the commit dot to the card's left edge */}
-                  <div
-                    className="absolute z-[1] h-[2px]"
-                    style={{ left: dotX, top: p.top + DOT_Y - 1, width: left - dotX, background: `linear-gradient(90deg, ${color}, ${color}88)`, boxShadow: `0 0 4px ${color}66` }}
-                  />
-                  <span
-                    className="absolute z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-black"
-                    style={{ left: dotX, top: p.top + DOT_Y, width: isMain ? 13 : 11, height: isMain ? 13 : 11, borderColor: color, boxShadow: `0 0 8px ${color}aa` }}
-                  />
-                  <span className="absolute z-[3] h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left, top: p.top + DOT_Y, background: color, boxShadow: `0 0 6px ${color}` }} />
-                </>
-              )}
-              <div
-                ref={(el) => {
-                  cardRefs.current[i] = el;
-                }}
-                className="absolute z-[2] transition-[top,left] duration-500"
-                style={{ left, top: p?.top ?? 0, width: colW }}
-              >
-                <div className="mb-1 pl-3 font-mono text-[10.5px] text-neutral-500">
-                  {fmt(r.date)}
-                  {!isMain && <span className="ml-2" style={{ color }}>branch: {r.id}</span>}
-                </div>
-                <div className={dim ? 'pointer-events-none' : ''}>{isMain ? <MainCard c={r} /> : <ProjectCard p={r} />}</div>
-              </div>
+        {/* Fixed layers, never interleaved per row (a faded row would otherwise form its own layer and
+            let its wire paint over other cards): wires (1) < cards (2) < hovered card (4); gutter dots (3)
+            never sit under a card. */}
+        {items.map(({ key, color, dim, p, left, dotX }) =>
+          p ? (
+            <div
+              key={`w-${key}`}
+              className="absolute z-[1] h-[2px] transition-opacity duration-500"
+              style={{ left: dotX, top: p.top + DOT_Y - 1, width: left - dotX, opacity: dim ? 0.12 : 1, background: `linear-gradient(90deg, ${color}, ${color}88)`, boxShadow: `0 0 4px ${color}66` }}
+            />
+          ) : null,
+        )}
+        {items.map(({ key, isMain, color, dim, p, dotX }) =>
+          p ? (
+            <span
+              key={`d-${key}`}
+              className="absolute z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-black transition-opacity duration-500"
+              style={{ left: dotX, top: p.top + DOT_Y, width: isMain ? 13 : 11, height: isMain ? 13 : 11, opacity: dim ? 0.3 : 1, borderColor: color, boxShadow: `0 0 8px ${color}aa` }}
+            />
+          ) : null,
+        )}
+        {items.map(({ key, r, i, isMain, color, dim, p, left }) => (
+          <div
+            key={key}
+            ref={(el) => {
+              cardRefs.current[i] = el;
+            }}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered((h) => (h === i ? null : h))}
+            className="absolute transition-[top,left,opacity] duration-500"
+            style={{ left, top: p?.top ?? 0, width: colW, zIndex: hovered === i ? 4 : 2, opacity: dim ? 0.12 : 1 }}
+          >
+            {/* where the wire meets the card */}
+            <span className="absolute h-[9px] w-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ left: 0, top: DOT_Y, background: color, boxShadow: `0 0 6px ${color}` }} />
+            <div className="mb-1 pl-3 font-mono text-[10.5px] text-neutral-500">
+              {fmt(r.date)}
+              {!isMain && <span className="ml-2" style={{ color }}>branch: {r.type === 'project' ? r.id : ''}</span>}
             </div>
-          );
-        })}
+            <div className={dim ? 'pointer-events-none' : ''}>{r.type === 'main' ? <MainCard c={r} /> : <ProjectCard p={r} />}</div>
+          </div>
+        ))}
       </div>
     </section>
   );
