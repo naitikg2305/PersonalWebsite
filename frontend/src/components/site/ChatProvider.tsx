@@ -107,9 +107,10 @@ export default function ChatProvider({ index, children }: { index: IndexItem[]; 
 
   useEffect(() => {
     const check = () => setNavAsk(!!document.querySelector('[data-site-nav]'));
+    const later = () => setTimeout(check, 120); // the navbar mounts on the render after the scroll event
     check();
-    window.addEventListener('scroll', check, { passive: true });
-    return () => window.removeEventListener('scroll', check);
+    window.addEventListener('scroll', later, { passive: true });
+    return () => window.removeEventListener('scroll', later);
   }, []);
 
   useLayoutEffect(() => {

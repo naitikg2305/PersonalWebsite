@@ -1,14 +1,15 @@
 'use client';
 
-// v3.4: everything on one vertical `git log --graph`, newest on top. All graph lines live in a
-// narrow gutter on the far left (main = career, branches = projects); from each commit dot a
-// horizontal wire runs out to its card, and the cards are staggered (deterministic pseudo-random
-// offsets/widths) so the right side reads like a pinboard. A filter fades everything but the
-// chosen track.
+// v3.5: everything on one vertical `git log --graph`, newest on top. The graph lives in a narrow
+// gutter on the far right (main = career on the right edge, project branches to its left). From
+// each commit dot a horizontal wire runs left to its card. Cards form an organized collage across
+// the full width: each card's top sits at its commit (so time still reads top to bottom), cards in
+// different columns may overlap vertically, and a wire simply runs under any card in its way.
+// A filter fades everything but the chosen track.
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { FaGithub } from 'react-icons/fa';
 
 const STLViewer = dynamic(() => import('./STLViewer'), { ssr: false });
@@ -119,66 +120,82 @@ function layout(): Span[] {
 const SPANS = layout();
 const LANES = Math.max(...SPANS.map((s) => s.lane)) + 1;
 const GUTTER = 14 + (LANES - 1) * LANE_W + 14;
-const laneX = (lane: number) => 10 + lane * LANE_W;
+const WIRE_GAP = 18; // clear space between the card area and the gutter, so wires read
+const COL_GAP = 18;
+const ROW_GAP = 16; // vertical space between cards in the same column
+const MIN_STEP = 34; // next commit is at least this far below the previous one (room for fork curves)
 
-function Gutter({ row }: { row: number }) {
-  const last = ROWS.length - 1;
-  const r = ROWS[row];
+/** The whole graph as one SVG, mirrored: main on the right edge, branches to its left. */
+function Graph({ ys, width, height }: { ys: number[]; width: number; height: number }) {
+  const laneX = (lane: number) => width - 10 - lane * LANE_W;
   const mx = laneX(0);
+  const dotY = (row: number) => ys[row] + DOT_Y;
+  const last = ROWS.length - 1;
   return (
-    <div className="relative shrink-0" style={{ width: GUTTER }}>
+    <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width={width} height={height} aria-hidden>
+      <defs>
+        {Object.entries({ main: MAIN_COLOR, ...COLOR }).map(([k, c]) => (
+          <filter key={k} id={`glow-${k}`} x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor={c} floodOpacity="0.6" />
+          </filter>
+        ))}
+      </defs>
       {/* main line */}
-      {row > 0 && <div className="absolute w-[3px] -translate-x-1/2" style={{ left: mx, top: 0, height: DOT_Y, background: MAIN_COLOR }} />}
-      {row < last && <div className="absolute bottom-0 w-[3px] -translate-x-1/2" style={{ left: mx, top: DOT_Y, background: MAIN_COLOR }} />}
-      {row === 0 && <div className="absolute -translate-x-1/2 font-mono text-[10px]" style={{ left: mx, top: -14, color: MAIN_COLOR }}>▲</div>}
+      <line x1={mx} x2={mx} y1={dotY(0) - 18} y2={dotY(last)} stroke={MAIN_COLOR} strokeWidth="3" />
+      <text x={mx} y={dotY(0) - 20} fill={MAIN_COLOR} fontSize="10" textAnchor="middle">▲</text>
 
-      {/* branch lines */}
+      {/* branches: fork curve off main at the first commit, line up to the merge (or off the top if ongoing) */}
       {SPANS.map((s) => {
-        if (row < s.endRow || row > s.startRow) return null;
         const x = laneX(s.lane);
-        const line = (top: number | string, bottom: number | string | undefined, key: string) => (
-          <div key={key} className="absolute w-[2px] -translate-x-1/2" style={{ left: x, top, bottom, background: s.color, boxShadow: `0 0 4px ${s.color}88` }} />
-        );
-        const parts = [];
-        if (row === s.startRow) {
-          // branch's first commit: line goes up from the dot; fork curve down to main
-          if (s.endRow < s.startRow || s.ongoing) parts.push(line(0, `calc(100% - ${DOT_Y}px)`, 'up'));
-          parts.push(
-            <svg key="fork" className="absolute overflow-visible" style={{ left: 0, top: DOT_Y, width: GUTTER, height: 26 }}>
-              <path d={`M${x},0 C${x},18 ${mx},10 ${mx},26`} fill="none" stroke={s.color} strokeWidth="2" />
-            </svg>,
-          );
-        } else if (!s.ongoing && row === s.endRow) {
-          // merge: line comes up from below and curves into the main commit
-          parts.push(line(DOT_Y + 22, 0, 'below'));
-          parts.push(
-            <svg key="merge" className="absolute overflow-visible" style={{ left: 0, top: DOT_Y, width: GUTTER, height: 22 }}>
-              <path d={`M${mx},0 C${mx},14 ${x},8 ${x},22`} fill="none" stroke={s.color} strokeWidth="2" />
-            </svg>,
-          );
-        } else {
-          parts.push(line(0, 0, 'through'));
-          if (s.ongoing && row === 0)
-            parts.push(<div key="arrow" className="absolute -translate-x-1/2 font-mono text-[10px]" style={{ left: x, top: -14, color: s.color }}>▲</div>);
-        }
-        return <div key={s.id}>{parts}</div>;
-      })}
-
-      {/* commit dot */}
-      {(() => {
-        const isMain = r.type === 'main';
-        const span = !isMain ? SPANS.find((s) => s.id === (r as ProjectCommit).id) : undefined;
-        const x = isMain ? mx : laneX(span!.lane);
-        const c = isMain ? MAIN_COLOR : span!.color;
+        const y0 = dotY(s.startRow);
+        const y1 = s.ongoing ? dotY(0) - 18 : dotY(s.endRow) + 22;
         return (
-          <span
-            className="absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-black"
-            style={{ left: x, top: DOT_Y, width: isMain ? 13 : 11, height: isMain ? 13 : 11, borderColor: c, boxShadow: `0 0 8px ${c}aa` }}
-          />
+          <g key={s.id} stroke={s.color} strokeWidth="2" fill="none">
+            <path d={`M${x},${y0} C${x},${y0 + 18} ${mx},${y0 + 10} ${mx},${y0 + 26}`} />
+            <line x1={x} x2={x} y1={y1} y2={y0} />
+            {s.ongoing ? (
+              <text x={x} y={y1 - 2} fill={s.color} stroke="none" fontSize="10" textAnchor="middle">▲</text>
+            ) : (
+              <path d={`M${mx},${dotY(s.endRow)} C${mx},${dotY(s.endRow) + 14} ${x},${dotY(s.endRow) + 8} ${x},${y1}`} />
+            )}
+          </g>
         );
-      })()}
-    </div>
+      })}
+    </svg>
   );
+}
+
+interface Placed {
+  col: number;
+  top: number;
+  bottom: number;
+}
+
+/** Time-ordered collage: each card goes in a column that is free at its top (never overlapping
+ *  another card); its top is at least MIN_STEP below the previous card's, so order reads top-down. */
+function place(heights: number[], cols: number): Placed[] {
+  const placed: Placed[] = [];
+  let prevTop = -MIN_STEP;
+  ROWS.forEach((r, i) => {
+    const key = `${r.date}-${r.title}`;
+    let y = prevTop + MIN_STEP;
+    for (;;) {
+      const colBottom = Array.from({ length: cols }, (_, c) => Math.max(-Infinity, ...placed.filter((p) => p.col === c).map((p) => p.bottom)));
+      const allowed = colBottom
+        .map((_, c) => c)
+        .filter((c) => colBottom[c] + ROW_GAP <= y);
+      if (allowed.length) {
+        // mostly the leftmost allowed column (fills the width in a cascade), sometimes another one
+        const pick = rand(key, 4) < 0.55 ? allowed[0] : allowed[Math.floor(rand(key, 5) * allowed.length)];
+        placed.push({ col: pick, top: y, bottom: y + heights[i] });
+        prevTop = y;
+        return;
+      }
+      // advance to the next moment a column frees up
+      y = Math.min(...colBottom.map((b) => b + ROW_GAP).filter((b) => b > y));
+    }
+  });
+  return placed;
 }
 
 // deterministic "random" in [0,1) per card, so the board is stable across renders/SSR
@@ -266,8 +283,40 @@ function ProjectCard({ p }: { p: ProjectCommit }) {
 
 export default function GitLogTimeline() {
   const [filter, setFilter] = useState<Filter>('all');
+  const boxRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [width, setWidth] = useState(0);
+  const [placed, setPlaced] = useState<Placed[] | null>(null);
+
+  const cols = width >= 1000 ? 3 : width >= 640 ? 2 : 1;
+  const area = width - GUTTER - WIRE_GAP; // card area, left of the gutter
+  const colW = Math.max(0, (area - COL_GAP * (cols - 1)) / cols);
+
+  // track the container width
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    setWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  // cards render at the column width; measure their real heights, then lay out
+  useLayoutEffect(() => {
+    if (!width) return;
+    const measure = () => setPlaced(place(cardRefs.current.map((el) => el?.offsetHeight ?? 160), cols));
+    measure();
+    const ro = new ResizeObserver(measure); // fonts/images settling change heights
+    cardRefs.current.forEach((el) => el && ro.observe(el));
+    return () => ro.disconnect();
+  }, [width, cols]);
+
+  const height = placed ? Math.max(...placed.map((p) => p.bottom)) + 24 : 0;
+  const ys = placed?.map((p) => p.top) ?? [];
+
   return (
-    <section id="timeline" style={{ margin: '0 auto 3rem', maxWidth: 1100, padding: '0 1.5rem' }}>
+    <section id="timeline" style={{ margin: '0 auto 3rem', maxWidth: 1440, padding: '0 1.5rem' }}>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <p className="inline-block rounded-md border border-[#00ff00]/40 bg-black px-3 py-1.5 font-mono text-[#00ff00] shadow-[0_0_12px_rgba(0,255,0,0.15)]">
           $ git log --graph --all <span className="text-neutral-500"># career on main, projects on branches</span>
@@ -293,39 +342,49 @@ export default function GitLogTimeline() {
         </div>
       </div>
 
-      <ol className="pt-4">
+      <div ref={boxRef} className="relative mt-8" style={{ height, visibility: placed ? 'visible' : 'hidden' }}>
+        {placed && width > 0 && <Graph ys={ys} width={width} height={height} />}
         {ROWS.map((r, i) => {
-          const key = `${r.date}-${r.title}`;
           const isMain = r.type === 'main';
           const color = isMain ? MAIN_COLOR : COLOR[r.kind];
           const dim = (filter === 'career' && !isMain) || (filter === 'projects' && isMain);
-          // board stagger: offset 0-40% of the free width, card width 46-60%
-          const width = 46 + Math.round(rand(key, 1) * 14);
-          const offset = Math.round(rand(key, 2) * Math.min(40, 100 - width));
-          const lift = Math.round(rand(key, 3) * 10); // small vertical jitter
-          const dotX = isMain ? laneX(0) : laneX(SPANS.find((s) => s.id === r.id)!.lane);
+          const p = placed?.[i];
+          const left = p ? p.col * (colW + COL_GAP) : 0;
+          const lane = isMain ? 0 : SPANS.find((s) => s.id === r.id)!.lane;
+          const dotX = width - 10 - lane * LANE_W;
           return (
-            <li key={key} className="flex">
-              <Gutter row={i} />
-              <div className="relative min-w-0 flex-1 transition-opacity duration-500" style={{ paddingBottom: 14 + lift, opacity: dim ? 0.12 : 1 }}>
-                {/* wire from the commit dot out to the card */}
-                <div
-                  className="absolute h-[2px]"
-                  style={{ left: dotX - GUTTER, top: DOT_Y - 1, width: `calc(${offset}% + 12px + ${GUTTER - dotX}px)`, background: `linear-gradient(90deg, ${color}, ${color}88)`, boxShadow: `0 0 4px ${color}66` }}
-                />
-                <div className="relative" style={{ marginLeft: `calc(${offset}% + 12px)`, width: `min(100% - ${offset}% - 12px, max(${width}%, 300px))` }}>
-                  <span className="absolute -left-[5px] z-10 h-[9px] w-[9px] rounded-full" style={{ top: DOT_Y - 4.5, background: color, boxShadow: `0 0 6px ${color}` }} />
-                  <div className="mb-1 pl-3 font-mono text-[10.5px] text-neutral-500">
-                    {fmt(r.date)}
-                    {!isMain && <span className="ml-2" style={{ color }}>branch: {r.id}</span>}
-                  </div>
-                  <div className={dim ? 'pointer-events-none' : ''}>{isMain ? <MainCard c={r} /> : <ProjectCard p={r} />}</div>
+            <div key={`${r.date}-${r.title}`} className="transition-opacity duration-500" style={{ opacity: dim ? 0.12 : 1 }}>
+              {p && (
+                <>
+                  {/* wire from the card's right edge to its commit dot */}
+                  <div
+                    className="absolute z-[1] h-[2px]"
+                    style={{ left: left + colW, top: p.top + DOT_Y - 1, width: dotX - left - colW, background: `linear-gradient(90deg, ${color}88, ${color})`, boxShadow: `0 0 4px ${color}66` }}
+                  />
+                  <span
+                    className="absolute z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-black"
+                    style={{ left: dotX, top: p.top + DOT_Y, width: isMain ? 13 : 11, height: isMain ? 13 : 11, borderColor: color, boxShadow: `0 0 8px ${color}aa` }}
+                  />
+                  <span className="absolute z-[3] h-[9px] w-[9px] -translate-y-1/2 translate-x-1/2 rounded-full" style={{ left: left + colW - 9, top: p.top + DOT_Y, background: color, boxShadow: `0 0 6px ${color}` }} />
+                </>
+              )}
+              <div
+                ref={(el) => {
+                  cardRefs.current[i] = el;
+                }}
+                className="absolute z-[2] transition-[top,left] duration-500"
+                style={{ left, top: p?.top ?? 0, width: colW }}
+              >
+                <div className="mb-1 pr-3 text-right font-mono text-[10.5px] text-neutral-500">
+                  {!isMain && <span className="mr-2" style={{ color }}>branch: {r.id}</span>}
+                  {fmt(r.date)}
                 </div>
+                <div className={dim ? 'pointer-events-none' : ''}>{isMain ? <MainCard c={r} /> : <ProjectCard p={r} />}</div>
               </div>
-            </li>
+            </div>
           );
         })}
-      </ol>
+      </div>
     </section>
   );
 }
