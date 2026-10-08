@@ -23,7 +23,8 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false);
   const [nameIndex, setNameIndex] = useState(0);
   const [showQuote, setShowQuote] = useState(false);
-  const { open: chatOpen, toggle: toggleChat } = useChat();
+  const { open: chatOpen, toggle: toggleChat, ask } = useChat();
+  const [askDraft, setAskDraft] = useState('');
   const { openPalette } = usePalette();
   const [booted, setBooted] = useState(false); // name types only after the boot intro
   const [showScrollHint, setShowScrollHint] = useState(false);
@@ -75,7 +76,7 @@ export default function Home() {
       <div className={styles.container}>
         <BootSequence onDone={() => setBooted(true)} />
         {scrolled && (
-          <div className={styles.navbar} data-site-nav>
+          <div className={styles.navbar} data-site-nav style={{ alignItems: 'center' }}>
             <div className={styles.navTitle} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <Link href="/" className="font-mono text-[1.05rem] font-normal" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                 <span className="text-[#00ff88]">naitik</span>
@@ -94,15 +95,44 @@ export default function Home() {
               <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" aria-label="Resume (PDF)" title="Resume (PDF)" style={{ color: '#e5e7eb' }}>
                 <HiOutlineDocumentText />
               </a>
-              <button onClick={openPalette} aria-label="Search the site" title="Search (Ctrl K or /)" className="text-neutral-300 transition hover:text-[#00ff88]">
-                <HiOutlineSearch />
-              </button>
-              <button
-                onClick={toggleChat}
-                aria-expanded={chatOpen}
-                className="flex items-center gap-1.5 rounded-md border border-[#00ff88]/50 px-2.5 py-0.5 font-mono text-[13px] font-normal text-[#00ff88] transition hover:bg-[#00ff88]/10"
+            </div>
+
+            {/* middle: ask the AI inline (answers drop down from under the navbar), then site search */}
+            <div className="mx-6 flex min-w-0 max-w-2xl flex-1 items-center gap-3">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!askDraft.trim()) return toggleChat();
+                  ask(askDraft);
+                  setAskDraft('');
+                }}
+                className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[#00ff88]/25 bg-[#0d1110] py-1 pl-3 pr-1 shadow-[0_0_14px_rgba(0,255,136,0.06)] transition focus-within:border-[#00ff88]/60"
               >
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00ff88]" /> ask ai {chatOpen ? '▴' : '▾'}
+                <span className="font-mono text-[#00ff88]">❯</span>
+                <input
+                  value={askDraft}
+                  onChange={(e) => setAskDraft(e.target.value)}
+                  placeholder="e.g. What did Naitik build at Grubhub?"
+                  maxLength={1000}
+                  aria-label="Ask the AI about Naitik"
+                  className="min-w-0 flex-1 bg-transparent font-sans text-[14px] font-normal text-neutral-100 outline-none placeholder:text-neutral-500"
+                />
+                <button type="submit" className="rounded-md bg-[#1f5c3a] px-3.5 py-1 font-sans text-[13px] font-semibold text-neutral-100 transition hover:bg-[#25724a]">
+                  ask
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleChat}
+                  aria-expanded={chatOpen}
+                  aria-label={chatOpen ? 'Hide chat' : 'Show chat'}
+                  title={chatOpen ? 'Hide chat' : 'Show chat'}
+                  className="px-1 font-mono text-[12px] text-neutral-500 transition hover:text-[#00ff88]"
+                >
+                  {chatOpen ? '▴' : '▾'}
+                </button>
+              </form>
+              <button onClick={openPalette} aria-label="Search the site" title="Search (Ctrl K or /)" className="shrink-0 text-[1.15rem] text-neutral-300 transition hover:text-[#00ff88]">
+                <HiOutlineSearch />
               </button>
             </div>
 
