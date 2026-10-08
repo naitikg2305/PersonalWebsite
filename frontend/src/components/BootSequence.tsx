@@ -4,6 +4,9 @@
 // then the terminal dissolves into a faint, still-scrolling backdrop behind the page.
 // Plays once per tab session; any key/click skips; reduced-motion users skip entirely.
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLiveLog } from './LiveLog';
+
+const HOME_SECTIONS = ['timeline', 'about', 'featured', 'experience', 'education', 'chat'];
 
 type Kind = 'cmd' | 'out' | 'ok' | 'bar' | 'dim';
 interface Line {
@@ -151,76 +154,12 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
     };
   }, [finish]);
 
-  // live mode: only real activity from this visitor's session prints from here on
+  // live mode: only real activity from this visitor's session prints from here on (shared with LiveBackdrop)
+  const pushLive = useCallback((kind: Kind, text: string) => setLines((l) => [...l.slice(-80), { kind, text }]), []);
   useEffect(() => {
-    if (phase !== 'backdrop') return;
-    const push = (kind: Kind, text: string) => setLines((l) => [...l.slice(-80), { kind, text }]);
-    push('dim', 'live · this session\'s clicks, network requests and AI calls print here');
-
-    // 1) anything on the page can log (chat traces etc.)
-    const onLog = (e: Event) => {
-      const { kind, text } = (e as CustomEvent<{ kind: Kind; text: string }>).detail;
-      push(kind, text);
-    };
-    window.addEventListener('livelog', onLog);
-
-    // 2) real clicks
-    const onClick = (e: MouseEvent) => {
-      const el = (e.target as HTMLElement)?.closest('a, button, input, textarea, [role="button"], h1, h2, h3, img') as HTMLElement | null;
-      if (!el) return;
-      const tag = el.tagName.toLowerCase();
-      const label = (el.getAttribute('aria-label') || el.getAttribute('alt') || el.innerText || (el as HTMLInputElement).placeholder || '').trim().replace(/\s+/g, ' ').slice(0, 48);
-      const href = el.getAttribute('href');
-      push('cmd', `click → <${tag}${href ? ` href="${href}"` : ''}>${label ? ` "${label}"` : ''}`);
-    };
-    document.addEventListener('click', onClick, true);
-
-    // 3) real network requests, from the browser's own performance timing
-    const fmtBytes = (n: number) => (n > 1024 * 1024 ? `${(n / 1048576).toFixed(1)} MB` : n > 1024 ? `${(n / 1024).toFixed(1)} kB` : `${n} B`);
-    const shorten = (p: string) => (p.length > 64 ? `${p.slice(0, 30)}…${p.slice(-30)}` : p);
-    let observer: PerformanceObserver | undefined;
-    try {
-      observer = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries() as PerformanceResourceTiming[]) {
-          const url = new URL(entry.name, location.href);
-          if (/webpack-hmr|turbopack|hot-update|__nextjs|_next\/static\/development/.test(url.pathname)) continue;
-          const method = entry.initiatorType === 'fetch' && url.pathname.startsWith('/api/') ? 'POST' : 'GET';
-          const status = (entry as PerformanceResourceTiming & { responseStatus?: number }).responseStatus;
-          const cached = entry.transferSize === 0 && entry.decodedBodySize > 0;
-          const host = url.host === location.host ? '' : url.host;
-          push(
-            'out',
-            `${method} ${host}${shorten(url.pathname)}${status ? ` ${status}` : ''} · ${entry.initiatorType} · ${Math.round(entry.duration)} ms · ${cached ? 'cache' : fmtBytes(entry.transferSize)}`,
-          );
-        }
-      });
-      observer.observe({ type: 'resource', buffered: false });
-    } catch {}
-
-    // 4) sections scrolling into view
-    const seen = new Set<string>();
-    const io = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((en) => {
-          const id = (en.target as HTMLElement).id;
-          if (en.isIntersecting && id && !seen.has(id)) {
-            seen.add(id);
-            push('cmd', `cat ${id}.md`);
-          }
-        }),
-      { threshold: 0.35 },
-    );
-    document.querySelectorAll('[id]').forEach((el) => {
-      if (['about', 'featured', 'experience', 'education', 'chat'].includes(el.id)) io.observe(el);
-    });
-
-    return () => {
-      window.removeEventListener('livelog', onLog);
-      document.removeEventListener('click', onClick, true);
-      observer?.disconnect();
-      io.disconnect();
-    };
-  }, [phase]);
+    if (phase === 'backdrop') pushLive('dim', "live · this session's clicks, network requests and AI calls print here");
+  }, [phase, pushLive]);
+  useLiveLog(phase === 'backdrop', pushLive, { sections: HOME_SECTIONS });
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
