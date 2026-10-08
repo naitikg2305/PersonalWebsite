@@ -10,6 +10,17 @@ export const runtime = 'nodejs';
 
 const FUNCTION_NAME = process.env.CHATBOT_FUNCTION_NAME ?? 'site-chatbot';
 const MAX_QUERY_CHARS = 1000;
+const MAX_HISTORY = 6; // prior messages forwarded as conversation memory (the backend re-validates)
+const MAX_HISTORY_CHARS = 1500;
+
+type Turn = { role: 'user' | 'assistant'; text: string };
+function cleanHistory(history: unknown): Turn[] {
+  if (!Array.isArray(history)) return [];
+  return history
+    .slice(-MAX_HISTORY)
+    .filter((m): m is Turn => (m?.role === 'user' || m?.role === 'assistant') && typeof m?.text === 'string')
+    .map((m) => ({ role: m.role, text: m.text.slice(0, MAX_HISTORY_CHARS) }));
+}
 
 const lambda = new LambdaClient({
   region: process.env.CHATBOT_REGION ?? 'us-east-1',
@@ -20,8 +31,9 @@ const lambda = new LambdaClient({
 
 export async function POST(request: Request) {
   let query: unknown;
+  let history: unknown;
   try {
-    ({ query } = await request.json());
+    ({ query, history } = await request.json());
   } catch {
     return NextResponse.json({ response: 'Invalid request.' }, { status: 400 });
   }
@@ -29,13 +41,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ response: 'Please ask a question.' }, { status: 400 });
   }
 
+  const body = JSON.stringify({ query: query.slice(0, MAX_QUERY_CHARS), history: cleanHistory(history) });
+
   // Local dev: point at backend-chatbot/local_server.py instead of the deployed Lambda.
   if (process.env.CHATBOT_LOCAL_URL) {
     try {
       const res = await fetch(`${process.env.CHATBOT_LOCAL_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query.slice(0, MAX_QUERY_CHARS) }),
+        body,
       });
       return NextResponse.json(await res.json(), { status: res.status });
     } catch (err) {
@@ -49,7 +63,7 @@ export async function POST(request: Request) {
       new InvokeCommand({
         FunctionName: FUNCTION_NAME,
         // Same event shape as a Function URL request, so the handler stays unchanged.
-        Payload: Buffer.from(JSON.stringify({ body: JSON.stringify({ query: query.slice(0, MAX_QUERY_CHARS) }) })),
+        Payload: Buffer.from(JSON.stringify({ body })),
       }),
     );
     if (result.FunctionError || !result.Payload) {

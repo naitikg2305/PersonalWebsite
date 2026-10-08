@@ -2,19 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import styles from '../styles/landing.module.css';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { HiOutlineMail } from "react-icons/hi";
 // import { getFeaturedProjects } from '@/lib/getFeaturedProjects';
 
-import ChatbotButton from './ChatbotButton';
-import ChatSection from './ChatSection';
+import { useChat } from './site/ChatProvider';
+import { usePalette } from './site/CommandPalette';
 import BootSequence from './BootSequence';
 import GitLogTimeline from './GitLogTimeline';
 import Link from 'next/link';
 // add this import with your other icons
-import { HiOutlineDocumentText } from "react-icons/hi";
+import { HiOutlineDocumentText, HiOutlineSearch } from "react-icons/hi";
 
 
 export default function Home() {
@@ -25,7 +23,8 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false);
   const [nameIndex, setNameIndex] = useState(0);
   const [showQuote, setShowQuote] = useState(false);
-  const [aboutContent, setAboutContent] = useState('');
+  const { open: chatOpen, toggle: toggleChat } = useChat();
+  const { openPalette } = usePalette();
   const [booted, setBooted] = useState(false); // name types only after the boot intro
   const [showScrollHint, setShowScrollHint] = useState(false);
 
@@ -43,12 +42,6 @@ export default function Home() {
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    fetch('/content/about/about.md')
-      .then((res) => res.text())
-      .then(setAboutContent);
   }, []);
 
   useEffect(() => {
@@ -82,31 +75,35 @@ export default function Home() {
       <div className={styles.container}>
         <BootSequence onDone={() => setBooted(true)} />
         {scrolled && (
-          <div className={styles.navbar}>
+          <div className={styles.navbar} data-site-nav>
             <div className={styles.navTitle} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span>Naitik Gupta</span>
-              <a href="https://github.com/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#fff' }}>
+              <Link href="/" className="font-mono text-[1.05rem] font-normal" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                <span className="text-[#00ff88]">naitik</span>
+                <span className="text-neutral-500">@gupta:~$</span>
+                <span className="ml-1 inline-block h-[1.05em] w-[0.55em] animate-pulse bg-[#00ff88] align-[-0.15em]" />
+              </Link>
+              <a href="https://github.com/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#fff' }} aria-label="GitHub">
                 <FaGithub />
               </a>
-              <a href="https://linkedin.com/in/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#0077b5' }}>
+              <a href="https://linkedin.com/in/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#0077b5' }} aria-label="LinkedIn">
                 <FaLinkedin />
               </a>
-              <a href="mailto:naitikg2305@gmail.com" style={{ color: '#00ff00' }}>
+              <a href="mailto:naitikg2305@gmail.com" style={{ color: '#00ff00' }} aria-label="Email">
                 <HiOutlineMail />
               </a>
-              <a
-                href="/resume.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Resume (PDF)"
-                title="Resume (PDF)"
-                style={{ color: '#e5e7eb' }} 
-    >
-      <HiOutlineDocumentText />
-
-
+              <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" aria-label="Resume (PDF)" title="Resume (PDF)" style={{ color: '#e5e7eb' }}>
+                <HiOutlineDocumentText />
               </a>
-              <ChatbotButton />
+              <button onClick={openPalette} aria-label="Search the site" title="Search (Ctrl K or /)" className="text-neutral-300 transition hover:text-[#00ff88]">
+                <HiOutlineSearch />
+              </button>
+              <button
+                onClick={toggleChat}
+                aria-expanded={chatOpen}
+                className="flex items-center gap-1.5 rounded-md border border-[#00ff88]/50 px-2.5 py-0.5 font-mono text-[13px] font-normal text-[#00ff88] transition hover:bg-[#00ff88]/10"
+              >
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#00ff88]" /> ask ai {chatOpen ? '▴' : '▾'}
+              </button>
             </div>
 
             <div className={styles.navLinks}>
@@ -141,22 +138,6 @@ export default function Home() {
 
         <div className={styles.contentContainer} id="about">
           <GitLogTimeline />
-          <div className={styles.terminal}>
-            <div className={styles.terminalHeader}>&quot;&quot;</div>
-            <div className={styles.terminalBody}>
-              
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {aboutContent}
-              </ReactMarkdown>
-              <span className={styles.cursor}>█</span>
-            </div>
-          </div>
-        </div>
-        
-        
-
-        <div id="chat" className={styles.chatPanel}>
-          <ChatSection />
         </div>
       </div>
     </div>

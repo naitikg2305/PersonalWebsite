@@ -23,6 +23,8 @@ MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-5-5")
 REGION = os.environ.get("BEDROCK_REGION", "us-east-1")
 TOP_K = int(os.environ.get("TOP_K", "6"))
 MAX_QUERY_CHARS = 1000
+MAX_HISTORY = 6  # prior messages (3 exchanges) kept as conversation memory
+MAX_HISTORY_CHARS = 1500
 
 SYSTEM_PROMPT = """You are the assistant on Naitik Gupta's personal website (naitikg.us). \
 Visitors ask about Naitik's work experience, projects, skills, education, interests, and the \
@@ -151,7 +153,29 @@ def _under_daily_cap() -> tuple[bool, int | None]:
 _cold_start = True  # first invocation in this Lambda container
 
 
-def answer_with_sources(question: str) -> dict:
+def _clean_history(history) -> list[dict]:
+    """Prior turns from the browser session → alternating user/assistant messages (untrusted input)."""
+    if not isinstance(history, list):
+        return []
+    turns = []
+    for m in history[-MAX_HISTORY:]:
+        if not isinstance(m, dict) or m.get("role") not in ("user", "assistant") or not isinstance(m.get("text"), str):
+            continue
+        text = m["text"].strip()[:MAX_HISTORY_CHARS]
+        if not text:
+            continue
+        if turns and turns[-1]["role"] == m["role"]:
+            turns[-1]["content"] += "\n\n" + text
+        else:
+            turns.append({"role": m["role"], "content": text})
+    while turns and turns[0]["role"] != "user":  # must start with the user...
+        turns.pop(0)
+    if turns and turns[-1]["role"] != "assistant":  # ...and end on an answer, before the new question
+        turns.pop()
+    return turns
+
+
+def answer_with_sources(question: str, history=None) -> dict:
     """Answer + the site pages it used + a real trace for the site's live terminal:
     {"response": str, "sources": [{"title", "source"}], "trace": {...timings, chunks, tokens...}}."""
     global _cold_start
@@ -170,8 +194,12 @@ def answer_with_sources(question: str) -> dict:
         trace["capped"] = True
         return {"response": BUSY_MESSAGE, "sources": [], "trace": trace}
 
+    turns = _clean_history(history)
+    trace["history_turns"] = len(turns)
+    # follow-ups ("what about the other one?") retrieve better with the previous question attached
+    last_user = next((t["content"] for t in reversed(turns) if t["role"] == "user"), "")
     t = time.perf_counter()
-    chunks = retrieve(question)
+    chunks = retrieve(f"{last_user}\n{question}" if last_user else question)
     trace.update(retrieve_ms=round((time.perf_counter() - t) * 1000), chunks=len(chunks), keywords=_keywords(question)[:3])
     context = "\n\n".join(
         f'<excerpt source="{c["source"]}" title="{c["title"]}">\n{c["text"]}\n</excerpt>'
@@ -187,6 +215,7 @@ def answer_with_sources(question: str) -> dict:
         max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=[
+            *turns,
             {
                 "role": "user",
                 "content": f"<context>\n{context}\n</context>\n\nVisitor's question: {question}",

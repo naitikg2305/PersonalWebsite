@@ -4,6 +4,9 @@ import "./globals.css";
 import LiveBackdrop from "../components/LiveLog";
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { HiOutlineMail } from "react-icons/hi";
+import ChatProvider from "../components/site/ChatProvider";
+import CommandPalette from "../components/site/CommandPalette";
+import { getSiteIndex } from "../lib/siteIndex";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -20,18 +23,21 @@ export const metadata: Metadata = {
   description: "Portfolio and projects by Naitik Gupta",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const index = await getSiteIndex(); // powers ⌘K search and turns chat sources into links
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <LiveBackdrop />
-        {children}
+        <ChatProvider index={index}>
+          <CommandPalette index={index}>{children}</CommandPalette>
+        </ChatProvider>
 
         {/* 🔗 Footer with Socials */}
         <footer
