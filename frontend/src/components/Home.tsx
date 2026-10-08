@@ -14,6 +14,7 @@ import EducationSection from './EducationSection'; // new
 import ChatbotButton from './ChatbotButton';
 import ChatSection from './ChatSection';
 import BootSequence from './BootSequence';
+import CareerTimeline from './CareerTimeline';
 import Link from 'next/link';
 import { Project } from '@/types/project';
 // add this import with your other icons
@@ -158,6 +159,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
         </div>
 
         <div className={styles.contentContainer} id="about">
+          <CareerTimeline />
           <section id="featured">
   <FeaturedSection featuredProjects={featuredProjects} />
 </section>
