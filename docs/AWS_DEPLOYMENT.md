@@ -185,7 +185,7 @@ aws iam put-role-policy --profile personal --role-name site-chatbot-lambda --pol
 sleep 10   # new IAM roles take a few seconds to become assumable
 aws lambda create-function $P --function-name site-chatbot --package-type Image \
   --code ImageUri=$REG/site-chatbot:$SHA --role arn:aws:iam::$ACCT:role/site-chatbot-lambda \
-  --memory-size 1536 --timeout 30 --architectures x86_64 \
+  --memory-size 1536 --timeout 120 --architectures x86_64 \
   --environment 'Variables={BEDROCK_MODEL_ID=us.anthropic.claude-haiku-4-5-20251001-v1:0,BEDROCK_REGION=us-east-1,TOP_K=6,DAILY_CAP_TABLE=site-chatbot-usage,DAILY_CAP=300}'
 aws lambda wait function-active-v2 $P --function-name site-chatbot
 aws logs create-log-group $P --log-group-name /aws/lambda/site-chatbot
@@ -377,6 +377,8 @@ A public chatbot needs *some* public entry point; the goal is to control **who c
 - **Pushed a stale local image** built before a fix. Commit first, tag with the SHA, and check the code inside the image (CI avoids this).
 - **Chroma needs a writable dir**: `/var/task` is read-only in Lambda, so the DB is copied to `/tmp` on cold start.
 - **Small embedders blur rare proper nouns** ("Minfy" → NaviGatr chunks), fixed with a keyword pass (`where_document={"$contains": ...}`).
+- **Lambda timeout must exceed the first cold start of a new image.** With 30 s, the first start after a CI deploy (>30 s) was killed, the next request started cold again, and the live chat returned 504s. Raised to 120 s, and warm after deploys:
+  `aws lambda invoke $P --function-name site-chatbot --cli-binary-format raw-in-base64-out --payload '{"body":"{\"query\":\"hi\"}"}' /tmp/o.json`
 - **`git push` ≠ `gh`**: pushing uses SSH keys; `gh` (PRs, repo variables, branch protection) needs its own login, and `gh auth login --web` authorizes whichever account the browser is signed into.
 
 ## 9. Teardown
