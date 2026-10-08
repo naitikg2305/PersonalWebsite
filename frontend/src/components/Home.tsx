@@ -6,36 +6,18 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { HiOutlineMail } from "react-icons/hi";
-import FeaturedSection from './FeaturedSection';
 // import { getFeaturedProjects } from '@/lib/getFeaturedProjects';
 
-import EducationSection from './EducationSection'; // new
 import ChatbotButton from './ChatbotButton';
 import ChatSection from './ChatSection';
 import BootSequence from './BootSequence';
 import GitLogTimeline from './GitLogTimeline';
 import Link from 'next/link';
-import { Project } from '@/types/project';
 // add this import with your other icons
 import { HiOutlineDocumentText } from "react-icons/hi";
 
 
-type Experience = {
-  title: string;
-  company: string;
-  dates: string;
-  location: string;
-  slug: string;
-  summaryPoints: string[];
-};
-
-interface HomeProps {
-  workExperiences: Experience[];
-  educations: Experience[];
-  featuredProjects: Project[];
-}
-
-export default function Home({ workExperiences, educations, featuredProjects  }: HomeProps) {
+export default function Home() {
   const name = 'Naitik Gupta';
   const quote = 'Decode the world to build it better.';
 
@@ -130,7 +112,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
             <div className={styles.navLinks}>
               <Link href="#">Home</Link>
               <Link href="/experience">Experience</Link>
-              <Link href="#education">Education</Link> {/* NEW */}
+              <Link href="/education/UMD">Education</Link>
               <Link href="/projects">Projects</Link>
               <Link href="/builds">Builds</Link>
               <Link href="/knowledge">Knowledge</Link>
@@ -159,9 +141,6 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
 
         <div className={styles.contentContainer} id="about">
           <GitLogTimeline />
-          <section id="featured">
-  <FeaturedSection featuredProjects={featuredProjects} />
-</section>
           <div className={styles.terminal}>
             <div className={styles.terminalHeader}>&quot;&quot;</div>
             <div className={styles.terminalBody}>
@@ -175,8 +154,6 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
         </div>
         
         
-
-        <EducationSection educations={educations} /> {/* NEW */}
 
         <div id="chat" className={styles.chatPanel}>
           <ChatSection />
