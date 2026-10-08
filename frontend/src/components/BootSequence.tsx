@@ -56,6 +56,19 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
   const [bar, setBar] = useState(-1); // progress 0..100 of the current bar line
   const doneRef = useRef(false);
   const [scroll, setScroll] = useState(0);
+  const [focus, setFocus] = useState(0); // 0..1: how much of the timeline section is on screen
+
+  // dim the log while the career timeline is in view, so it reads cleanly
+  useEffect(() => {
+    const el = document.getElementById('timeline');
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setFocus(Math.min(1, entry.intersectionRatio / 0.5)), // full dim once ~half of it is visible
+      { threshold: Array.from({ length: 21 }, (_, i) => i / 20) },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScroll(window.scrollY);
@@ -221,7 +234,8 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
       : {
           zIndex: phase === 'dissolve' ? 3000 : -1,
           backgroundColor: 'transparent',
-          opacity: 1 - 0.75 * fade, // full while the name shows; fades 75% (→ 0.25) as you scroll
+          // full while the name shows; fades 75% (→ 0.25) as you scroll; dips to 0.10 over the timeline
+          opacity: (1 - 0.75 * fade) * (1 - focus) + 0.1 * focus,
           filter: 'none',
         };
 
