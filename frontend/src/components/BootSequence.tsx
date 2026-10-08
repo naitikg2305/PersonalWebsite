@@ -55,6 +55,14 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
   const [typing, setTyping] = useState(''); // current command being typed
   const [bar, setBar] = useState(-1); // progress 0..100 of the current bar line
   const doneRef = useRef(false);
+  const [scroll, setScroll] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => setScroll(window.scrollY);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -206,13 +214,14 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
   }, [lines, typing, bar]);
 
   // inline styles: the dissolve values must always apply (no reliance on generated utility classes)
+  const fade = Math.min(1, scroll / (typeof window === 'undefined' ? 800 : window.innerHeight * 0.9)); // 0 at top → 1 after ~a screen
   const layer: React.CSSProperties =
     phase === 'boot'
       ? { zIndex: 3000, backgroundColor: '#000', opacity: 1, filter: 'none' }
       : {
           zIndex: phase === 'dissolve' ? 3000 : -1,
           backgroundColor: 'transparent',
-          opacity: 0.5, // constant 50%: content sits on solid black panels above it
+          opacity: 1 - 0.75 * fade, // full while the name shows; fades 75% (→ 0.25) as you scroll
           filter: 'none',
         };
 
