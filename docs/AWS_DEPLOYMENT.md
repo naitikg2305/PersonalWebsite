@@ -185,7 +185,7 @@ aws iam put-role-policy --profile personal --role-name site-chatbot-lambda --pol
 sleep 10   # new IAM roles take a few seconds to become assumable
 aws lambda create-function $P --function-name site-chatbot --package-type Image \
   --code ImageUri=$REG/site-chatbot:$SHA --role arn:aws:iam::$ACCT:role/site-chatbot-lambda \
-  --memory-size 1536 --timeout 30 --architectures x86_64 \
+  --memory-size 1536 --timeout 120 --architectures x86_64 \
   --environment 'Variables={BEDROCK_MODEL_ID=us.anthropic.claude-haiku-4-5-20251001-v1:0,BEDROCK_REGION=us-east-1,TOP_K=6,DAILY_CAP_TABLE=site-chatbot-usage,DAILY_CAP=300}'
 aws lambda wait function-active-v2 $P --function-name site-chatbot
 aws logs create-log-group $P --log-group-name /aws/lambda/site-chatbot
@@ -263,20 +263,39 @@ aws amplify update-app $P --app-id <app-id> --compute-role-arn arn:aws:iam::$ACC
 ```
 No environment variables are needed: the browser calls same-origin `/api/chat`, and the route defaults to function `site-chatbot` in us-east-1.
 
-### 2.13 Custom domain (GoDaddy → Amplify)
-```
-Amplify → App → Hosting → Custom domains → Add domain → naitikg.us (+ www)
-  → Amplify shows a CNAME for certificate validation + records for apex/www
-GoDaddy → My Products → naitikg.us → DNS:
-  - add the validation CNAME and the www CNAME exactly as shown
-  - apex @: use what Amplify gives (GoDaddy has no ALIAS for apex), or forward apex → www
-  - DELETE the parked A records (15.197.148.33, 3.33.130.190) and the old Vercel records
-```
+### 2.13 Custom domain (GoDaddy → Amplify), done 2026-10-08
 ```bash
-curl -s "https://dns.google/resolve?name=naitikg.us&type=A"
-curl -s "https://dns.google/resolve?name=www.naitikg.us&type=CNAME"
-curl -sI https://www.naitikg.us | head -5
+# Amplify: main = production, feature branch = development
+aws amplify create-branch $P --app-id <app-id> --branch-name main --stage PRODUCTION --framework "Next.js - SSR" --enable-auto-build
+aws amplify start-job $P --app-id <app-id> --branch-name main --job-type RELEASE
+# domain: apex + www → main, Amplify-managed certificate
+aws amplify create-domain-association $P --app-id <app-id> --domain-name naitikg.us \
+  --sub-domain-settings prefix=www,branchName=main prefix=,branchName=main --certificate-settings type=AMPLIFY_MANAGED
+aws amplify get-domain-association $P --app-id <app-id> --domain-name naitikg.us \
+  --query 'domainAssociation.{status:domainStatus,cert:certificateVerificationDNSRecord,subs:subDomains[].dnsRecord}'
 ```
+GoDaddy → My Products → naitikg.us → **DNS**:
+
+| Action | Type | Name | Value |
+|---|---|---|---|
+| **edit** (was `cname.vercel-dns.com`) | CNAME | `www` | `<id>.cloudfront.net` (from Amplify) |
+| **add** | CNAME | `_<hash>` | `_<hash>.<x>.acm-validations.aws` (cert validation, from Amplify) |
+| **keep** | NS ×2, SOA | `@` | GoDaddy-managed, locked |
+| **keep** | TXT | `_dmarc` | email anti-spoofing; exactly **one** DMARC record (duplicates invalidate both) |
+
+**Bare domain:** GoDaddy can't CNAME/ALIAS the apex, so use **Forwarding**: `naitikg.us` → `https://www.naitikg.us`, Permanent (301), Forward only. GoDaddy then adds two locked A `@` records (its forwarding servers). Make sure the destination includes `www.` (my first attempt redirected to itself).
+
+Verify:
+```bash
+curl -s "https://dns.google/resolve?name=www.naitikg.us&type=CNAME"     # → <id>.cloudfront.net
+aws amplify get-domain-association $P --app-id <app-id> --domain-name naitikg.us --query 'domainAssociation.domainStatus'
+#   PENDING_VERIFICATION → PENDING_DEPLOYMENT → AVAILABLE   (~15 min after DNS was right)
+CF=$(getent ahosts <id>.cloudfront.net | awk 'NR==1{print $1}')
+curl -s -o /dev/null -w "%{http_code}\n" --resolve www.naitikg.us:443:$CF https://www.naitikg.us/   # test before caches expire
+curl -s -i http://naitikg.us | grep -i location                         # → www
+resolvectl flush-caches                                                   # local machine stuck on the old answer
+```
+Expect up to **1 hour** of mixed results: the old record's TTL was 1 hour, so some resolvers keep serving the Vercel address. Lower TTLs a day *before* a cutover to avoid this.
 
 ---
 
@@ -358,6 +377,8 @@ A public chatbot needs *some* public entry point; the goal is to control **who c
 - **Pushed a stale local image** built before a fix. Commit first, tag with the SHA, and check the code inside the image (CI avoids this).
 - **Chroma needs a writable dir**: `/var/task` is read-only in Lambda, so the DB is copied to `/tmp` on cold start.
 - **Small embedders blur rare proper nouns** ("Minfy" → NaviGatr chunks), fixed with a keyword pass (`where_document={"$contains": ...}`).
+- **Lambda timeout must exceed the first cold start of a new image.** With 30 s, the first start after a CI deploy (>30 s) was killed, the next request started cold again, and the live chat returned 504s. Raised to 120 s, and warm after deploys:
+  `aws lambda invoke $P --function-name site-chatbot --cli-binary-format raw-in-base64-out --payload '{"body":"{\"query\":\"hi\"}"}' /tmp/o.json`
 - **`git push` ≠ `gh`**: pushing uses SSH keys; `gh` (PRs, repo variables, branch protection) needs its own login, and `gh auth login --web` authorizes whichever account the browser is signed into.
 
 ## 9. Teardown
