@@ -94,17 +94,15 @@ const EXHIBITS: Exhibit[] = [
 ];
 
 const ACCENT = '#00ff88';
-const SHORT = 22; // px connector for the upper row
-const ROW = 210; // px offset of the lower row (card height + gap)
+const CARD_H = 175; // px, room reserved for a block
+// connector lengths (px), alternating sides: organic-looking but neighbours never collide
+const LENGTHS = [40, 70, 30, 95, 55, 35, 85, 45, 65, 30, 75];
 
-function Block({ ex, className = '', style }: { ex: Exhibit; className?: string; style?: React.CSSProperties }) {
+function Block({ ex, showDate = false }: { ex: Exhibit; showDate?: boolean }) {
   const inner = (
-    <div
-      className={`group rounded-lg border border-white/10 bg-[#0d1112] p-3 text-left transition hover:-translate-y-0.5 hover:border-[#00ff88]/60 ${className}`}
-      style={style}
-    >
-      <div className="font-mono text-[10px] tracking-[0.15em]" style={{ color: ACCENT }}>{ex.date}</div>
-      <h4 className="mt-1 font-mono text-[12.5px] font-bold leading-snug text-neutral-100">{ex.title}</h4>
+    <div className="rounded-lg border border-white/15 bg-[#0b0e0f] p-3 text-left shadow-[0_6px_20px_rgba(0,0,0,0.7)] transition hover:-translate-y-0.5 hover:border-[#00ff88]/60">
+      {showDate && <div className="font-mono text-[10px] tracking-[0.15em]" style={{ color: ACCENT }}>{ex.date}</div>}
+      <h4 className="font-mono text-[12.5px] font-bold leading-snug text-neutral-100">{ex.title}</h4>
       <p className="font-mono text-[11px] text-neutral-400">{ex.org}</p>
       <ul className="mt-2 space-y-0.5 font-mono text-[10.5px] leading-snug text-neutral-400">
         {ex.bullets.map((b) => (
@@ -127,35 +125,51 @@ function Block({ ex, className = '', style }: { ex: Exhibit; className?: string;
 
 export default function CareerTimeline() {
   const n = EXHIBITS.length;
-  // each block spans two event-steps; place centers so the first/last blocks stay inside the panel
+  // each block spans two event-steps; place centers so the first/last blocks stay inside
   const width = 200 / (n + 1); // % width of a block
   const step = (100 - width) / (n - 1); // % between neighbouring events (= width / 2)
+  const maxLen = Math.max(...LENGTHS);
+  const half = maxLen + CARD_H; // px above and below the line
   return (
-    <section
-      id="timeline"
-      style={{ background: '#000', border: '1px solid #00ff0055', borderRadius: 8, boxShadow: '0 0 12px #00ff0026', margin: '0 2rem 3rem', padding: '1.5rem 2rem' }}
-    >
-      <p className="font-mono text-[#00ff00]">
+    <section id="timeline" style={{ margin: '0 2rem 3rem' }}>
+      <p className="inline-block rounded-md border border-[#00ff00]/40 bg-black px-3 py-1.5 font-mono text-[#00ff00] shadow-[0_0_12px_rgba(0,255,0,0.15)]">
         $ git log --oneline --since=2021 <span className="text-neutral-500"># {n} commits to the career branch</span>
       </p>
 
-      {/* ── large screens: one line, alternating short/long connectors ───── */}
-      <div className="relative mt-8 hidden xl:block" style={{ height: ROW + SHORT + 215 }}>
-        <div className="absolute left-0 right-0 top-[5px] h-px bg-white/25" />
+      {/* ── ≥1280px: one line, blocks scattered above/below with varied connectors ── */}
+      <div className="relative mt-6 hidden xl:block" style={{ height: half * 2 }}>
+        <div className="absolute left-0 right-0 h-px bg-white/30" style={{ top: half }} />
         {EXHIBITS.map((ex, i) => {
           const center = width / 2 + step * i;
-          const lower = i % 2 === 1;
-          const connector = lower ? SHORT + ROW : SHORT;
+          const up = i % 2 === 0;
+          const len = LENGTHS[i % LENGTHS.length];
           return (
             <div key={`${ex.date}-${ex.title}`}>
+              {/* dot */}
               <span
-                className="absolute top-0 h-[11px] w-[11px] -translate-x-1/2 rounded-full border-2 bg-black"
-                style={{ left: `${center}%`, borderColor: ACCENT, boxShadow: `0 0 8px ${ACCENT}88` }}
+                className="absolute h-[11px] w-[11px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-black"
+                style={{ left: `${center}%`, top: half, borderColor: ACCENT, boxShadow: `0 0 8px ${ACCENT}88` }}
               />
-              <span className="absolute w-px -translate-x-1/2 bg-white/25" style={{ left: `${center}%`, top: 11, height: connector }} />
+              {/* date on the line, opposite side from the block */}
+              <span
+                className="absolute -translate-x-1/2 whitespace-nowrap rounded bg-black px-1.5 font-mono text-[10px] tracking-wider"
+                style={{ left: `${center}%`, top: up ? half + 9 : half - 23, color: ACCENT }}
+              >
+                {ex.date}
+              </span>
+              {/* connector */}
+              <span
+                className="absolute w-px -translate-x-1/2 bg-white/30"
+                style={{ left: `${center}%`, top: up ? half - 6 - len : half + 6, height: len }}
+              />
+              {/* block */}
               <div
                 className="absolute -translate-x-1/2"
-                style={{ left: `${center}%`, top: 11 + connector, width: `calc(${width}% - 10px)` }}
+                style={{
+                  left: `${center}%`,
+                  width: `calc(${width}% - 10px)`,
+                  ...(up ? { bottom: half * 2 - (half - 6 - len) } : { top: half + 6 + len }),
+                }}
               >
                 <Block ex={ex} />
               </div>
@@ -164,15 +178,15 @@ export default function CareerTimeline() {
         })}
       </div>
 
-      {/* ── smaller screens: vertical line, blocks to the right ──────────── */}
-      <ol className="relative mt-6 space-y-4 border-l border-white/25 pl-6 xl:hidden">
+      {/* ── smaller screens: vertical line, blocks to the right ── */}
+      <ol className="relative mt-6 space-y-4 border-l border-white/30 pl-6 xl:hidden">
         {EXHIBITS.map((ex) => (
           <li key={`${ex.date}-${ex.title}`} className="relative">
             <span
               className="absolute -left-[30px] top-3 h-[11px] w-[11px] rounded-full border-2 bg-black"
               style={{ borderColor: ACCENT, boxShadow: `0 0 8px ${ACCENT}88` }}
             />
-            <Block ex={ex} />
+            <Block ex={ex} showDate />
           </li>
         ))}
       </ol>
