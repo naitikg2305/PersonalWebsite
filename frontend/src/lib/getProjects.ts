@@ -41,6 +41,7 @@ export async function getProjects(): Promise<Project[]> {
               docs: data.docs || [],
               youtube: data.youtube || '',
               github: data.github || '',
+              category: data.category || '',
             };
           } catch {
             console.warn(`[SKIP] Missing or unreadable index.md in: ${folder.name}`);
@@ -49,7 +50,9 @@ export async function getProjects(): Promise<Project[]> {
         })
     );
 
-    return projects.filter(Boolean) as Project[];
+    // Projects tagged `category: "software"` are listed in the Software Projects
+    // section instead (see getSoftwareProjects), so they are not shown twice.
+    return (projects.filter(Boolean) as Project[]).filter((p) => p.category !== 'software');
   } catch (err) {
     console.error(`[getProjects] Failed to read project dir: ${err}`);
     return [];

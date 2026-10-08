@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '../../../styles/landing.module.css';
 import STLViewer from '../../../components/STLViewer';
+import softwareStyles from '../../../styles/softwareProjects.module.css';
 
 export default async function ProjectDetailPage({
   params,
@@ -10,7 +11,7 @@ export default async function ProjectDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { data, content } = await readProject(slug);
+  const { data, content, dir } = await readProject(slug);
 
   return (
     <div className={styles.projectDetail}>
@@ -42,6 +43,14 @@ export default async function ProjectDetailPage({
 
       <p className={styles.projectSummary}>{data.summary}</p>
 
+      {data.category === 'software' && data.tags && data.tags.length > 0 && (
+        <ul className={softwareStyles.tagList} aria-label="Tags">
+          {data.tags.map((tag) => (
+            <li key={tag} className={softwareStyles.tag}>{tag}</li>
+          ))}
+        </ul>
+      )}
+
       {data.github && (
         <a
           href={data.github}
@@ -65,13 +74,13 @@ export default async function ProjectDetailPage({
 
       <div className={styles.projectFiles}>
         {Array.isArray(data.pdfs) && data.pdfs.length > 0 && (
-          <FileList title="📄 PDFs" files={data.pdfs} slug={data.slug} prefix="Featured" isViewer={false} />
+          <FileList title="📄 PDFs" files={data.pdfs} slug={data.slug} prefix={dir} isViewer={false} />
         )}
         {Array.isArray(data.stls) && data.stls.length > 0 && (
-          <FileList title="🧊 STL Files (viewable)" files={data.stls} slug={data.slug} prefix="Featured" isViewer={true} viewerType="stl-viewer" />
+          <FileList title="🧊 STL Files (viewable)" files={data.stls} slug={data.slug} prefix={dir} isViewer={true} viewerType="stl-viewer" />
         )}
         {Array.isArray(data.docs) && data.docs.length > 0 && (
-          <FileList title="📚 Docs" files={data.docs} slug={data.slug} prefix="Featured" isViewer={true} viewerType="doc-viewer" />
+          <FileList title="📚 Docs" files={data.docs} slug={data.slug} prefix={dir} isViewer={true} viewerType="doc-viewer" />
         )}
       </div>
 
@@ -84,7 +93,7 @@ export default async function ProjectDetailPage({
               const resolvedSrc =
                 safeSrc.startsWith('http') || safeSrc.startsWith('data:image')
                   ? safeSrc
-                  : `/content/projects/Featured/${slug}/${safeSrc}`;
+                  : `/content/projects/${dir}/${slug}/${safeSrc}`;
 
               return (
                 <img

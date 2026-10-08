@@ -5,6 +5,8 @@ tags: ["AI", "Full-Stack"]
 featured: true                               # optional
 summary: "Personal Website showcase everything I learn and build"    # required
 github: https://github.com/naitikg2305/PersonalWebsite
+category: "software"                         # also listed under Software Projects on /projects
+softwareOrder: 5                             # position in the Software Projects section (leaves homepage order untouched)
 
 ---
 # Building an AI Chatbot with Frontend and Backend Integration
