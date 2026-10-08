@@ -41,6 +41,42 @@
   display: inline-block;
 }
 
+.heroNudge {
+  animation: heroNudge 2.5s ease-in-out infinite;
+}
+
+/* Name + quote lift up, hold, then settle back — every 2.5s */
+@keyframes heroNudge {
+  0%, 10% { transform: translateY(0); }
+  30%, 60% { transform: translateY(-1.6rem); }
+  80%, 100% { transform: translateY(0); }
+}
+
+.scrollHint {
+  position: absolute;
+  left: 50%;
+  bottom: -0.4rem;
+  transform: translateX(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: normal;
+  letter-spacing: 0.15em;
+  color: #00ff00;
+  opacity: 0;
+  animation: scrollReveal 2.5s ease-in-out infinite;
+}
+
+/* Revealed in the gap while the hero is lifted, hidden as it settles */
+@keyframes scrollReveal {
+  0%, 15% { opacity: 0; transform: translate(-50%, 0.4rem); }
+  32%, 58% { opacity: 0.9; transform: translate(-50%, 0); }
+  75%, 100% { opacity: 0; transform: translate(-50%, 0.4rem); }
+}
+
 .quote {
   margin-top: 1rem;
   font-size: 1.2rem;

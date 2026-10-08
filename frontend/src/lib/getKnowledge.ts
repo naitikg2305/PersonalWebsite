@@ -5,6 +5,8 @@ import matter from 'gray-matter';
 export interface KnowledgeNote {
   slug: string;
   title: string;
+  category: string;
+  summary: string;
   content: string;
 }
 
@@ -25,6 +27,8 @@ export async function getKnowledge(): Promise<KnowledgeNote[]> {
           return {
             slug: file.replace('.md', ''),
             title: data.title || file.replace('.md', ''),
+            category: data.category || 'Other',
+            summary: data.summary || '',
             content,
           };
         })

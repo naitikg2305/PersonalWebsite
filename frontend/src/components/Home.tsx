@@ -43,6 +43,13 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
   const [nameIndex, setNameIndex] = useState(0);
   const [showQuote, setShowQuote] = useState(false);
   const [aboutContent, setAboutContent] = useState('');
+  const [showScrollHint, setShowScrollHint] = useState(false);
+
+  // After 5s on the landing screen, start nudging the name up to reveal a scroll hint
+  useEffect(() => {
+    const timeout = setTimeout(() => setShowScrollHint(true), 5000);
+    return () => clearTimeout(timeout);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -128,13 +135,22 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
         )}
 
         <div className={`${styles.nameContainer} ${scrolled ? styles.shrunk : ''}`}>
-          <span className={styles.name}>{name.slice(0, nameIndex)}</span>
-          {showQuote && !scrolled && (
-            <div className={styles.quote}>{quote}</div>
+          <div className={showScrollHint && !scrolled ? styles.heroNudge : ''}>
+            <span className={styles.name}>{name.slice(0, nameIndex)}</span>
+            {showQuote && !scrolled && (
+              <div className={styles.quote}>{quote}</div>
+            )}
+          </div>
+          {showScrollHint && !scrolled && (
+            <button
+              className={styles.scrollHint}
+              onClick={() => window.scrollTo({ top: window.innerHeight * 0.9, behavior: 'smooth' })}
+              aria-label="Scroll down"
+            >
+              scroll ⌄
+            </button>
           )}
         </div>
-        
-        
 
         <div className={styles.contentContainer} id="about">
           <section id="featured">
