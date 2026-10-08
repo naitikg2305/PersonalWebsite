@@ -3,12 +3,14 @@
 // Landing intro: a fake-but-faithful deploy of this very site streams on a black screen,
 // then the terminal dissolves into a faint, still-scrolling backdrop behind the page.
 // Plays once per tab session; any key/click skips; reduced-motion users skip entirely.
+// Once the hero name has typed in, the terminal runs `cat about.md` and types the About text out
+// as one block, which then stays in the log.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLiveLog } from './LiveLog';
 
 const HOME_SECTIONS = ['timeline', 'about', 'featured', 'experience', 'education', 'chat'];
 
-type Kind = 'cmd' | 'out' | 'ok' | 'bar' | 'dim';
+type Kind = 'cmd' | 'out' | 'ok' | 'bar' | 'dim' | 'about';
 interface Line {
   kind: Kind;
   text: string;
@@ -41,18 +43,27 @@ const SCRIPT: Line[] = [
   { kind: 'cmd', text: './naitik --init', pause: 450 },
 ];
 
-const prefix: Record<Kind, string> = { cmd: '$ ', out: '  ', ok: '  ', bar: '  ', dim: '# ' };
+const prefix: Record<Kind, string> = { cmd: '$ ', out: '  ', ok: '  ', bar: '  ', dim: '# ', about: '' };
+
+// about.md → plain terminal text (no heading, no markdown emphasis)
+const plain = (md: string) =>
+  md
+    .replace(/^#.*\n+/, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\[(.+?)\]\(.+?\)/g, '$1')
+    .trim();
 const color: Record<Kind, string> = {
   cmd: 'text-[#3dff8c]',
   out: 'text-neutral-400',
   ok: 'text-emerald-300',
   bar: 'text-neutral-300',
   dim: 'text-neutral-600',
+  about: 'text-neutral-400',
 };
 
 type Phase = 'boot' | 'dissolve' | 'backdrop';
 
-export default function BootSequence({ onDone }: { onDone: () => void }) {
+export default function BootSequence({ onDone, typeAbout = false }: { onDone: () => void; typeAbout?: boolean }) {
   const [phase, setPhase] = useState<Phase>('boot');
   const [lines, setLines] = useState<{ kind: Kind; text: string }[]>([]);
   const [typing, setTyping] = useState(''); // current command being typed
@@ -160,7 +171,44 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
   }, [finish]);
 
   // live mode: only real activity from this visitor's session prints from here on (shared with LiveBackdrop)
-  const pushLive = useCallback((kind: Kind, text: string) => setLines((l) => [...l.slice(-80), { kind, text }]), []);
+  // keep the last 80 lines, but the About block always stays
+  const pushLive = useCallback(
+    (kind: Kind, text: string) => setLines((l) => [...l.filter((x, i) => x.kind === 'about' || i >= l.length - 80), { kind, text }]),
+    [],
+  );
+
+  // after the name: `cat about.md`, then the About text types out as one block
+  const [about, setAbout] = useState<string | null>(null); // the block while it is being typed
+  const aboutStarted = useRef(false);
+  useEffect(() => {
+    if (!typeAbout || phase !== 'backdrop' || aboutStarted.current) return;
+    aboutStarted.current = true;
+    let cancelled = false;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    (async () => {
+      const text = plain(await (await fetch('/content/about/about.md')).text());
+      const cmd = 'cat about.md';
+      for (let i = 1; i <= cmd.length && !cancelled; i++) {
+        setTyping(cmd.slice(0, i));
+        await sleep(35);
+      }
+      if (cancelled) return;
+      setTyping('');
+      setLines((l) => [...l, { kind: 'cmd', text: cmd }]);
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      for (let i = reduce ? text.length : 0; i <= text.length && !cancelled; i += 3) {
+        setAbout(text.slice(0, i));
+        await sleep(10);
+      }
+      if (cancelled) return;
+      setAbout(null);
+      setLines((l) => [...l, { kind: 'about', text }]);
+    })().catch(() => {});
+    return () => {
+      cancelled = true;
+      aboutStarted.current = false;
+    };
+  }, [typeAbout, phase]);
   useEffect(() => {
     if (phase === 'backdrop') pushLive('dim', "live · this session's clicks, network requests and AI calls print here");
   }, [phase, pushLive]);
@@ -168,7 +216,7 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [lines, typing, bar]);
+  }, [lines, typing, bar, about]);
 
   // inline styles: the dissolve values must always apply (no reliance on generated utility classes)
   const fade = Math.min(1, scroll / (typeof window === 'undefined' ? 800 : window.innerHeight * 0.9)); // 0 at top → 1 after ~a screen
@@ -197,12 +245,24 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
     >
       <div ref={scrollRef} className="h-full overflow-hidden px-5 py-6 text-left font-mono text-[13px] leading-6 sm:px-8 sm:text-sm">
         <div className="flex min-h-full flex-col justify-end md:max-w-[56%]">
-          {lines.map((l, i) => (
-            <div key={i} className={`whitespace-pre-wrap break-all ${color[l.kind]}`}>
-              {prefix[l.kind]}
-              {l.text}
+          {lines.map((l, i) =>
+            l.kind === 'about' ? (
+              <div key={i} className={`my-1 whitespace-pre-wrap break-words md:max-w-[44vw] ${color.about}`}>
+                {l.text}
+              </div>
+            ) : (
+              <div key={i} className={`whitespace-pre-wrap break-all ${color[l.kind]}`}>
+                {prefix[l.kind]}
+                {l.text}
+              </div>
+            ),
+          )}
+          {about !== null && (
+            <div className={`my-1 whitespace-pre-wrap break-words md:max-w-[44vw] ${color.about}`}>
+              {about}
+              <span className="ml-0.5 inline-block h-4 w-2 translate-y-0.5 animate-pulse bg-[#3dff8c]" />
             </div>
-          ))}
+          )}
           {typing && (
             <div className="whitespace-pre-wrap break-all text-[#3dff8c]">
               $ {typing}

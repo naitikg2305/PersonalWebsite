@@ -6,6 +6,7 @@
 // turns are sent along as memory. Answers type out progressively, sources link to site pages, and
 // each request's real backend trace is printed into the live background terminal.
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -86,6 +87,7 @@ export default function ChatProvider({ index, children }: { index: IndexItem[]; 
   const [maximized, setMaximized] = useState(false);
   const [top, setTop] = useState(0); // bottom edge of the navbar the panel drops from
   const [navAsk, setNavAsk] = useState(false); // the navbar has its own ask bar → no floating button
+  const isHome = usePathname() === '/'; // the homepage uses the navbar ask bar only (the button covered the boot's skip hint)
   const history = useRef<Message[]>([]);
   history.current = messages;
 
@@ -186,7 +188,7 @@ export default function ChatProvider({ index, children }: { index: IndexItem[]; 
       {children}
 
       {/* floating button */}
-      {!open && !navAsk && (
+      {!open && !navAsk && !isHome && (
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-md border bg-black/90 px-4 py-2.5 font-mono text-sm shadow-[0_0_16px_rgba(0,255,136,0.18)] backdrop-blur transition hover:bg-[#00ff8814]"

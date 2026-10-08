@@ -74,7 +74,7 @@ export default function Home() {
       )}
 
       <div className={styles.container}>
-        <BootSequence onDone={() => setBooted(true)} />
+        <BootSequence onDone={() => setBooted(true)} typeAbout={showQuote} />
         {scrolled && (
           <div className={styles.navbar} data-site-nav style={{ alignItems: 'center' }}>
             <div className={styles.navTitle} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
