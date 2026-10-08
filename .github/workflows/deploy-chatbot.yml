@@ -1,0 +1,55 @@
+# Build the chatbot container and deploy it to AWS Lambda whenever main changes it.
+# Auth: GitHub OIDC → IAM role (no AWS keys stored). The role ARN lives in the repo
+# variable AWS_DEPLOY_ROLE_ARN so the account ID stays out of this public file.
+name: Deploy chatbot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend-chatbot/**"
+      - ".github/workflows/deploy-chatbot.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # request the OIDC token
+  contents: read
+
+concurrency:
+  group: deploy-chatbot
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: site-chatbot
+  FUNCTION_NAME: site-chatbot
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        run: |
+          docker build --platform linux/amd64 --provenance=false -t "$IMAGE" backend-chatbot
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Update Lambda
+        run: |
+          aws lambda update-function-code --function-name "$FUNCTION_NAME" --image-uri "$IMAGE" --query LastUpdateStatus --output text
+          aws lambda wait function-updated-v2 --function-name "$FUNCTION_NAME"
+          echo "Deployed $IMAGE"
