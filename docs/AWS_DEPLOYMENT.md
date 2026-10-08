@@ -3,7 +3,7 @@
 How this site is hosted, every CLI command used to set it up, and how to update, roll back, or tear it down.
 Started 2026-10-08 (migration from Vercel + Render). Region: **us-east-1**.
 
-> Placeholders: `<account-id>` = 12-digit AWS account ID, `<function-url>` = the Lambda Function URL.
+> Placeholders: `<account-id>` = 12-digit AWS account ID, `<app-id>` = Amplify app ID.
 > Every AWS command uses `--profile personal`. Never rely on a default profile when one machine holds several AWS accounts.
 
 ---
@@ -12,70 +12,81 @@ Started 2026-10-08 (migration from Vercel + Render). Region: **us-east-1**.
 
 ```mermaid
 flowchart LR
-    dev["Developer<br/>feature branch"] -->|PR + merge| main["GitHub<br/>main branch"]
+    dev["Developer<br/>feature branch"] -->|PR + merge| main["GitHub<br/>main (protected)"]
 
-    main -->|Amplify GitHub App<br/>webhook| amplify["AWS Amplify Hosting<br/>builds frontend/ (Next.js SSR)"]
+    main -->|Amplify GitHub App| amplify
     main -->|push touching backend-chatbot/**| gha["GitHub Actions<br/>deploy-chatbot.yml"]
-
-    gha -->|OIDC → IAM role<br/>github-deploy-site-chatbot| ecr["Amazon ECR<br/>site-chatbot image"]
+    gha -->|OIDC → role github-deploy-site-chatbot| ecr["Amazon ECR<br/>site-chatbot image"]
     gha -->|update-function-code| lambda
 
-    visitor["Visitor"] -->|https://naitikg.us| dns["GoDaddy DNS"] --> amplify
-    amplify -->|browser POST /chat<br/>NEXT_PUBLIC_API_URL| furl["Lambda Function URL<br/>(CORS: naitikg.us)"]
-    furl --> lambda["AWS Lambda site-chatbot<br/>container: Chroma + ONNX MiniLM"]
+    visitor["Visitor's browser"] -->|https://naitikg.us| dns["GoDaddy DNS"] --> amplify
+
+    subgraph amplify["AWS Amplify Hosting (Next.js SSR)"]
+      pages["pages + markdown"]
+      route["/api/chat route<br/>(server-side)"]
+    end
+
+    route -->|lambda:Invoke<br/>compute role amplify-site-compute| lambda["AWS Lambda site-chatbot<br/>(no public URL)"]
     ecr -.image.-> lambda
-    lambda -->|IAM role site-chatbot-lambda<br/>bedrock:InvokeModel| bedrock["Amazon Bedrock<br/>Claude Haiku"]
-    lambda --> logs["CloudWatch Logs<br/>14-day retention"]
-
-    budget["AWS Budgets<br/>$5/mo alert"] -.email.-> owner["naitikg2305@gmail.com"]
+    lambda -->|1. atomic +1, refuse over cap| ddb["DynamoDB<br/>site-chatbot-usage<br/>(daily counter)"]
+    lambda -->|2. retrieve| chroma["chroma_db + ONNX MiniLM<br/>(inside the image)"]
+    lambda -->|3. bedrock:InvokeModel<br/>role site-chatbot-lambda| bedrock["Amazon Bedrock<br/>Claude Haiku"]
+    lambda --> logs["CloudWatch Logs (14 d)"]
+    budget["AWS Budgets $5/mo"] -.email.-> owner["naitikg2305@gmail.com"]
 ```
 
-Same thing in plain text:
+Plain text:
 
 ```
- feature branch ──PR──► main
-                         │
-          ┌──────────────┴───────────────┐
-          ▼                              ▼
-  Amplify Hosting                 GitHub Actions (backend-chatbot/** changed)
-  builds frontend/ (Next.js)        │ OIDC → IAM role (no stored AWS keys)
-          │                         ▼
-          │                       docker build → ECR → lambda update-function-code
+ feature branch ──PR──► main (protected)
+                          │
+          ┌───────────────┴────────────────┐
+          ▼                                ▼
+  Amplify Hosting                   GitHub Actions (backend-chatbot/** changed)
+  builds frontend/ (Next.js SSR)      │ OIDC → IAM role (no stored keys)
+          │                           ▼
+          │                         docker build → ECR → lambda update-function-code
           ▼
-  https://naitikg.us ──POST /chat──► Lambda Function URL ──► Lambda "site-chatbot"
-  (GoDaddy DNS → Amplify)                                     │ 1. embed question (ONNX MiniLM)
-                                                              │ 2. keyword + semantic search in chroma_db
-                                                              │ 3. Bedrock: Claude Haiku answers from excerpts
-                                                              ▼
-                                                           JSON {"response": "..."}
+  Browser ──► https://naitikg.us/api/chat  (same origin; nothing about AWS in the browser)
+                 │ Next.js route on Amplify, IAM compute role: may invoke ONLY site-chatbot
+                 ▼
+              Lambda "site-chatbot"  (no Function URL: not reachable from the internet)
+                 │ 1. DynamoDB: today's count +1, refuse if ≥ DAILY_CAP  → hard spend ceiling
+                 │ 2. embed question (ONNX MiniLM), keyword + semantic search in chroma_db
+                 │ 3. Bedrock: Claude Haiku answers from the excerpts (IAM role, no API key)
+                 ▼
+              {"response": "..."}
 ```
 
 ### Components
 
 | Piece | Where | Notes |
 |---|---|---|
-| Frontend | `frontend/` → **Amplify Hosting** | Next.js 15; build spec in `amplify.yml`; deploys on push to `main` |
-| Chatbot API | `backend-chatbot/` → **Lambda** (container image) | `lambda_function.handler`; public **Function URL** with CORS |
+| Frontend | `frontend/` → **Amplify Hosting** | Next.js 15 SSR; build spec `amplify.yml`; deploys on push to `main` |
+| Chat proxy | `frontend/src/app/api/chat/route.ts` | server-side; invokes the Lambda via AWS SDK with the Amplify **compute role** |
+| Chatbot | `backend-chatbot/` → **Lambda** (container image) | `lambda_function.handler`; **no Function URL** |
+| Spend cap | **DynamoDB** `site-chatbot-usage` | atomic per-day counter; over `DAILY_CAP` (300) → busy message, no Bedrock call |
 | Vector DB | `backend-chatbot/chroma_db/` (committed) | built **locally** by `embed.py`, baked into the image |
-| Embeddings | Chroma's ONNX `all-MiniLM-L6-v2` | same model at build time and query time; no PyTorch |
-| LLM | **Amazon Bedrock**, Claude Haiku (`BEDROCK_MODEL_ID`) | auth = Lambda's IAM role; no API keys anywhere |
-| CI/CD | `.github/workflows/deploy-chatbot.yml` | GitHub OIDC → `github-deploy-site-chatbot` role |
-| DNS | GoDaddy (registrar + DNS) | records point at Amplify; Amplify issues the TLS cert |
-| Guardrail | AWS Budgets `monthly-5usd` | email at $4 actual / $5 forecast |
+| Embeddings | Chroma's ONNX `all-MiniLM-L6-v2` | same model at build and query time; no PyTorch |
+| LLM | **Bedrock** Claude Haiku (`BEDROCK_MODEL_ID`) | auth = Lambda execution role |
+| CI/CD | `.github/workflows/deploy-chatbot.yml` | GitHub OIDC → `github-deploy-site-chatbot` |
+| DNS | GoDaddy | records point at Amplify; Amplify issues the TLS cert |
+| Guardrail | AWS Budgets `monthly-5usd` | email at $4 actual / $5 forecast (billing data lags hours, so it isn't a brake) |
 
 ### AWS resources
 
-| Resource | Name |
-|---|---|
-| ECR repository | `site-chatbot` (lifecycle: keep last 3 images) |
-| Lambda function | `site-chatbot` (image, 1536 MB, 30 s, x86_64) |
-| Lambda execution role | `site-chatbot-lambda` (`AWSLambdaBasicExecutionRole` + inline `bedrock-claude-haiku`) |
-| Function URL | auth `NONE`, CORS `https://naitikg.us`, `https://www.naitikg.us`, `http://localhost:3000` (+ Amplify domain) |
-| Log group | `/aws/lambda/site-chatbot` (14 days) |
-| OIDC provider | `token.actions.githubusercontent.com` |
-| CI deploy role | `github-deploy-site-chatbot` (only `repo:naitikg2305/PersonalWebsite:ref:refs/heads/main`) |
-| Amplify app | connected to `main` |
-| Budget | `monthly-5usd` |
+| Resource | Name | Permissions |
+|---|---|---|
+| ECR repository | `site-chatbot` | lifecycle: keep last 3 images |
+| Lambda | `site-chatbot` (image, 1536 MB, 30 s) | runs as `site-chatbot-lambda` |
+| Lambda execution role | `site-chatbot-lambda` | Basic logs + `bedrock:InvokeModel` (Haiku only) + `dynamodb:UpdateItem` (usage table only) |
+| DynamoDB table | `site-chatbot-usage` (on-demand, TTL `expires_at`) | |
+| Amplify compute role | `amplify-site-compute` | `lambda:InvokeFunction` on `site-chatbot` only |
+| CI deploy role | `github-deploy-site-chatbot` | ECR push to `site-chatbot` + `UpdateFunctionCode` on `site-chatbot`; trusted only for `repo:naitikg2305/PersonalWebsite:ref:refs/heads/main` |
+| OIDC provider | `token.actions.githubusercontent.com` | |
+| Log group | `/aws/lambda/site-chatbot` (14 days) | |
+| Amplify app | connected to `main` | compute role `amplify-site-compute` |
+| Budget | `monthly-5usd` | |
 
 ---
 
@@ -85,7 +96,7 @@ Same thing in plain text:
 ```bash
 # IAM console: Users → Create user (naitik-radier-cli) → Attach policies directly → AdministratorAccess
 #              → Security credentials → Create access key → "Command Line Interface (CLI)"
-aws configure --profile personal                   # paste key id + secret; region us-east-1; output json
+aws configure --profile personal                   # key id + secret; region us-east-1; output json
 aws configure set region us-east-1 --profile personal
 chmod 600 ~/.aws/credentials
 aws sts get-caller-identity --profile personal     # confirm the account before creating anything
@@ -124,7 +135,6 @@ cd backend-chatbot
 uv venv --python 3.12 .venv                                       # match the Lambda runtime
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python embed.py                                         # → "Embedded N chunks from M markdown files"
-# local end-to-end test against Bedrock (explicit profile, never the shell's AWS_PROFILE):
 CHATBOT_AWS_PROFILE=personal BEDROCK_MODEL_ID=us.anthropic.claude-haiku-4-5-20251001-v1:0 \
   .venv/bin/python -c "from chatbot import answer; print(answer('What is NaviGatr?'))"
 ```
@@ -136,14 +146,24 @@ aws ecr put-lifecycle-policy $P --repository-name site-chatbot --lifecycle-polic
   '{"rules":[{"rulePriority":1,"description":"keep last 3 images","selection":{"tagStatus":"any","countType":"imageCountMoreThan","countNumber":3},"action":{"type":"expire"}}]}'
 
 REG=$ACCT.dkr.ecr.us-east-1.amazonaws.com
-SHA=$(git rev-parse --short HEAD)
+SHA=$(git rev-parse --short HEAD)                                        # commit first, so the tag = the code
 aws ecr get-login-password $P | podman login --username AWS --password-stdin $REG
-podman build --platform linux/amd64 -t site-chatbot backend-chatbot     # or: docker build ...
+podman build --platform linux/amd64 -t site-chatbot backend-chatbot
 podman tag localhost/site-chatbot:latest $REG/site-chatbot:$SHA
 podman push --format docker $REG/site-chatbot:$SHA                       # Lambda needs Docker manifest format
 ```
 
-### 2.6 Lambda execution role (Bedrock + logs only)
+### 2.6 DynamoDB daily-cap table
+```bash
+aws dynamodb create-table $P --table-name site-chatbot-usage \
+  --attribute-definitions AttributeName=day,AttributeType=S --key-schema AttributeName=day,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST
+aws dynamodb wait table-exists $P --table-name site-chatbot-usage
+aws dynamodb update-time-to-live $P --table-name site-chatbot-usage \
+  --time-to-live-specification Enabled=true,AttributeName=expires_at
+```
+
+### 2.7 Lambda execution role (Bedrock + logs + counter)
 ```bash
 aws iam create-role --profile personal --role-name site-chatbot-lambda --assume-role-policy-document \
   '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
@@ -156,40 +176,42 @@ aws iam put-role-policy --profile personal --role-name site-chatbot-lambda --pol
     \"Resource\":[\"arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-*\",
                   \"arn:aws:bedrock:*:${ACCT}:inference-profile/us.anthropic.claude-haiku-*\",
                   \"arn:aws:bedrock:*:${ACCT}:inference-profile/global.anthropic.claude-haiku-*\"]}]}"
+aws iam put-role-policy --profile personal --role-name site-chatbot-lambda --policy-name daily-usage-counter --policy-document \
+  "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"dynamodb:UpdateItem\",\"Resource\":\"arn:aws:dynamodb:us-east-1:${ACCT}:table/site-chatbot-usage\"}]}"
 ```
 
-### 2.7 Lambda function + logs
+### 2.8 Lambda function + logs (no public URL)
 ```bash
 sleep 10   # new IAM roles take a few seconds to become assumable
 aws lambda create-function $P --function-name site-chatbot --package-type Image \
   --code ImageUri=$REG/site-chatbot:$SHA --role arn:aws:iam::$ACCT:role/site-chatbot-lambda \
   --memory-size 1536 --timeout 30 --architectures x86_64 \
-  --environment 'Variables={BEDROCK_MODEL_ID=us.anthropic.claude-haiku-4-5-20251001-v1:0,BEDROCK_REGION=us-east-1,TOP_K=6}'
+  --environment 'Variables={BEDROCK_MODEL_ID=us.anthropic.claude-haiku-4-5-20251001-v1:0,BEDROCK_REGION=us-east-1,TOP_K=6,DAILY_CAP_TABLE=site-chatbot-usage,DAILY_CAP=300}'
 aws lambda wait function-active-v2 $P --function-name site-chatbot
 aws logs create-log-group $P --log-group-name /aws/lambda/site-chatbot
 aws logs put-retention-policy $P --log-group-name /aws/lambda/site-chatbot --retention-in-days 14
 
-# smoke test (direct invoke, simulating a Function URL event)
+# smoke test (direct invoke with a Function-URL-shaped event)
 aws lambda invoke $P --function-name site-chatbot --cli-binary-format raw-in-base64-out \
   --payload '{"body":"{\"query\":\"What is NaviGatr?\"}"}' --log-type Tail /tmp/out.json && cat /tmp/out.json
 ```
-
-### 2.8 Public Function URL (CORS)
+History: a public Function URL (`--auth-type NONE` + CORS) was created first, then **removed** because anyone with the URL could spend Bedrock tokens (see §7). Commands used to lock it down:
 ```bash
-aws lambda create-function-url-config $P --function-name site-chatbot --auth-type NONE \
-  --cors '{"AllowOrigins":["https://naitikg.us","https://www.naitikg.us","http://localhost:3000"],"AllowMethods":["POST"],"AllowHeaders":["content-type"],"MaxAge":3600}'
-# Public URLs need BOTH permissions:
-aws lambda add-permission $P --function-name site-chatbot --statement-id public-url \
-  --action lambda:InvokeFunctionUrl --principal '*' --function-url-auth-type NONE
-aws lambda add-permission $P --function-name site-chatbot --statement-id public-url-invoke \
-  --action lambda:InvokeFunction --principal '*' --invoked-via-function-url
-
-URL=$(aws lambda get-function-url-config $P --function-name site-chatbot --query FunctionUrl --output text)
-curl -X POST "${URL}chat" -H 'content-type: application/json' -H 'Origin: https://naitikg.us' \
-  -d '{"query":"What projects has Naitik built?"}' -i
+aws lambda update-function-url-config $P --function-name site-chatbot --auth-type AWS_IAM
+aws lambda remove-permission $P --function-name site-chatbot --statement-id public-url
+aws lambda remove-permission $P --function-name site-chatbot --statement-id public-url-invoke
+aws lambda delete-function-url-config $P --function-name site-chatbot
 ```
 
-### 2.9 CI: GitHub OIDC + deploy role
+### 2.9 Amplify compute role (lets the site's server invoke the Lambda)
+```bash
+aws iam create-role --profile personal --role-name amplify-site-compute --assume-role-policy-document \
+  '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"amplify.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+aws iam put-role-policy --profile personal --role-name amplify-site-compute --policy-name invoke-site-chatbot --policy-document \
+  "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"lambda:InvokeFunction\",\"Resource\":\"arn:aws:lambda:us-east-1:${ACCT}:function:site-chatbot\"}]}"
+```
+
+### 2.10 CI: GitHub OIDC + deploy role
 ```bash
 aws iam create-open-id-connect-provider --profile personal \
   --url https://token.actions.githubusercontent.com --client-id-list sts.amazonaws.com
@@ -213,43 +235,41 @@ aws iam put-role-policy --profile personal --role-name github-deploy-site-chatbo
   {\"Effect\":\"Allow\",\"Action\":[\"lambda:UpdateFunctionCode\",\"lambda:GetFunction\",\"lambda:GetFunctionConfiguration\"],
    \"Resource\":\"arn:aws:lambda:us-east-1:${ACCT}:function:site-chatbot\"}]}"
 
-# The workflow reads the role ARN from a repo variable (keeps the account ID out of the public repo):
-gh variable set AWS_DEPLOY_ROLE_ARN --repo naitikg2305/PersonalWebsite \
-  --body "arn:aws:iam::${ACCT}:role/github-deploy-site-chatbot"
-```
-
-### 2.9b Git flow: protect main
-```bash
 # gh must be logged in as the repo owner (git push uses SSH keys; gh uses its own API token)
 gh auth switch -u naitikg2305
+gh variable set AWS_DEPLOY_ROLE_ARN --repo naitikg2305/PersonalWebsite \
+  --body "arn:aws:iam::${ACCT}:role/github-deploy-site-chatbot"     # keeps the account ID out of the public repo
+```
+
+### 2.11 Git flow: protect main
+```bash
 gh api -X PUT repos/naitikg2305/PersonalWebsite/branches/main/protection --input - <<'EOF'
 {"required_status_checks":null,"enforce_admins":false,"required_pull_request_reviews":{"required_approving_review_count":0},
  "restrictions":null,"allow_force_pushes":false,"allow_deletions":false}
 EOF
 ```
 
-### 2.10 Amplify Hosting (frontend)
+### 2.12 Amplify Hosting (frontend)
 ```
-Console → AWS Amplify → Create new app → GitHub → authorize the Amplify GitHub App
-  → repo naitikg2305/PersonalWebsite, branch main
-  → "My app is a monorepo" → root directory: frontend   (amplify.yml in the repo root defines the build)
-  → Environment variables: NEXT_PUBLIC_API_URL = <function-url without trailing slash>
+Console → AWS Amplify → Create new app → GitHub → authorize (as naitikg2305)
+  → repo PersonalWebsite, branch (test with the feature branch first, then main)
+  → "My app is a monorepo" → root directory: frontend      (amplify.yml in the repo root defines the build)
   → Save and deploy
 ```
-Then allow the Amplify domain in the Lambda CORS config:
+Attach the compute role so `/api/chat` can invoke the Lambda:
 ```bash
-aws lambda update-function-url-config $P --function-name site-chatbot \
-  --cors '{"AllowOrigins":["https://naitikg.us","https://www.naitikg.us","https://main.<app-id>.amplifyapp.com","http://localhost:3000"],"AllowMethods":["POST"],"AllowHeaders":["content-type"],"MaxAge":3600}'
+aws amplify update-app $P --app-id <app-id> --compute-role-arn arn:aws:iam::$ACCT:role/amplify-site-compute
+# (or console: App settings → IAM roles → Compute role → amplify-site-compute), then redeploy the branch
 ```
+No environment variables are needed: the browser calls same-origin `/api/chat`, and the route defaults to function `site-chatbot` in us-east-1.
 
-### 2.11 Custom domain (GoDaddy → Amplify)
+### 2.13 Custom domain (GoDaddy → Amplify)
 ```
 Amplify → App → Hosting → Custom domains → Add domain → naitikg.us (+ www)
-  → Amplify shows: 1 CNAME for certificate validation + records for apex/www
+  → Amplify shows a CNAME for certificate validation + records for apex/www
 GoDaddy → My Products → naitikg.us → DNS:
   - add the validation CNAME and the www CNAME exactly as shown
-  - apex @: point at Amplify as instructed (GoDaddy has no ALIAS for apex; use the record Amplify gives,
-    or forward apex → www)
+  - apex @: use what Amplify gives (GoDaddy has no ALIAS for apex), or forward apex → www
   - DELETE the parked A records (15.197.148.33, 3.33.130.190) and the old Vercel records
 ```
 ```bash
@@ -263,7 +283,7 @@ curl -sI https://www.naitikg.us | head -5
 ## 3. Day-to-day workflow
 
 ```bash
-git switch -c feature/<thing>          # never commit straight to main
+git switch -c feature/<thing>          # main is protected: changes go through PRs
 # ...edit...
 # if site content (markdown) changed, rebuild the chatbot's vector DB:
 cd backend-chatbot && .venv/bin/python embed.py && cd ..
@@ -271,74 +291,88 @@ find frontend/public/content -name '*.md' -newer backend-chatbot/chroma_db/chrom
 git add -A && git commit -m "..."
 git push -u origin feature/<thing>
 gh pr create --fill --base main        # review, then merge
-# merge to main → Amplify rebuilds the site; Actions redeploys the Lambda if backend-chatbot/** changed
+# merge → Amplify rebuilds the site; Actions redeploys the Lambda if backend-chatbot/** changed
 ```
 
-Local dev:
+Local dev (the real Lambda, via your personal profile):
+```bash
+cd frontend && CHATBOT_AWS_PROFILE=personal npm run dev        # http://localhost:3000, chat → /api/chat → Lambda
+```
+Backend only, no Lambda (calls Bedrock directly from your machine):
 ```bash
 cd backend-chatbot && CHATBOT_AWS_PROFILE=personal .venv/bin/python local_server.py     # :8000
-cd frontend && NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev                      # :3000
 ```
 
-Switch the model (e.g. to Haiku 5.5 once the account has access):
+Switch model or cap:
 ```bash
-aws lambda update-function-configuration $P --function-name site-chatbot \
-  --environment 'Variables={BEDROCK_MODEL_ID=us.anthropic.claude-haiku-5-5,BEDROCK_REGION=us-east-1,TOP_K=6}'
+aws lambda update-function-configuration $P --function-name site-chatbot --environment \
+  'Variables={BEDROCK_MODEL_ID=us.anthropic.claude-haiku-5-5,BEDROCK_REGION=us-east-1,TOP_K=6,DAILY_CAP_TABLE=site-chatbot-usage,DAILY_CAP=300}'
 ```
 
 ## 4. Operate
 
 ```bash
-aws logs tail /aws/lambda/site-chatbot $P --since 1h --follow        # live logs
-aws logs tail /aws/lambda/site-chatbot $P --since 1d | grep -E "REPORT|error"   # durations / errors
+aws logs tail /aws/lambda/site-chatbot $P --since 1h --follow                    # live logs
+aws logs tail /aws/lambda/site-chatbot $P --since 1d | grep -E "REPORT|error"    # durations / errors
+aws dynamodb get-item $P --table-name site-chatbot-usage \
+  --key "{\"day\":{\"S\":\"$(date -u +%F)\"}}" --query 'Item.count.N' --output text   # chats today
 aws lambda get-function $P --function-name site-chatbot --query 'Code.ImageUri'   # what's deployed
 aws ecr describe-images $P --repository-name site-chatbot --query 'imageDetails[].[imageTags[0],imagePushedAt]' --output table
 aws budgets describe-budgets --profile personal --account-id "$ACCT" --query 'Budgets[].[BudgetName,CalculatedSpend.ActualSpend.Amount]'
 ```
-
-Rollback the chatbot to an earlier image:
-```bash
-aws lambda update-function-code $P --function-name site-chatbot --image-uri $REG/site-chatbot:<older-tag>
-```
-Rollback the site: Amplify console → the branch → pick an earlier build → **Redeploy this version**, or revert the commit on main.
+Rollback the chatbot: `aws lambda update-function-code $P --function-name site-chatbot --image-uri $REG/site-chatbot:<older-tag>`
+Rollback the site: Amplify console → branch → earlier build → **Redeploy this version**, or revert the commit on `main`.
 
 ## 5. Cost (estimate)
 
 | Item | ~Monthly |
 |---|---|
-| Amplify (build + hosting) | $0–1 |
+| Amplify (build + SSR hosting) | $0–1 |
 | Lambda | $0 (free tier) |
-| ECR storage (~0.5 GB, 3 images max) | ~$0.05–0.15 |
+| DynamoDB (one tiny item/day) | $0 |
+| ECR storage (~0.5 GB × ≤3 images) | ~$0.05–0.15 |
 | CloudWatch Logs | ~$0 |
-| Bedrock Claude Haiku | ~$0.0005 (5.5) – $0.0045 (4.5) per chat |
+| Bedrock Claude Haiku | ~$0.0005 (5.5) – $0.0045 (4.5) per chat; **hard max ≈ 300 chats/day** |
 
 ## 6. Performance notes
 
-- Warm request: ~1.2–1.6 s (mostly the Bedrock call).
-- Cold start: ~10 s normally; the very first start after deploying a new image was ~26 s (Lambda streams the 1.2 GB image lazily).
-- Ideas if cold starts matter: an EventBridge keep-warm ping, more memory (= more CPU), or a slimmer image.
+- Warm request: ~1.2–1.6 s (mostly the Bedrock call). Over-cap refusal: ~0.1 s.
+- Cold start: ~10 s normally; the first start after a new image was ~26 s (Lambda streams the 1.2 GB image lazily).
+- If cold starts matter: an EventBridge keep-warm ping, more memory (= more CPU), or a slimmer image.
 
-## 7. Gotchas hit while setting this up
+## 7. Security model (why it's built this way)
 
-- **`AWS_PROFILE` on the dev machine pointed at a work account.** Always pass `--profile personal`; the local server forces `CHATBOT_AWS_PROFILE`.
+A public chatbot needs *some* public entry point; the goal is to control **who can reach the expensive part and how often**.
+- **No public Lambda URL.** The first version had one (CORS-restricted). CORS only stops *other websites' browsers*, not `curl`. With the account's 10-way Lambda concurrency at ~1.5 s per answer, a script could do ~24k chats/hour ≈ **$100–190/hour** on Haiku 4.5, and budget emails arrive hours late.
+- **Same-origin `/api/chat` proxy:** the browser never sees AWS details; only Amplify's compute role (`lambda:InvokeFunction` on one function) can reach the Lambda.
+- **Hard daily cap** (DynamoDB atomic counter, checked *before* Bedrock): the worst case is bounded to ≈ 300 × $0.008 ≈ **$2.40/day** regardless of traffic.
+- **Least-privilege roles** everywhere; no long-lived AWS keys in GitHub or the app.
+
+## 8. Gotchas hit while setting this up
+
+- **`AWS_PROFILE` on the dev machine pointed at a work account.** Always pass `--profile personal`; the app forces `CHATBOT_AWS_PROFILE` locally.
 - **New account → "Your account is currently being verified"** on Bedrock for up to ~2 h.
 - **Anthropic use-case form** is required once per account before any Claude call (`InvokeModel` → 404 "Model use case details have not been submitted").
 - **Newer Claude models need an inference profile ID** (`us.anthropic...`), not the bare model ID.
-- **`output_config.effort` is 5.x-only**: Haiku 4.5 → 400 "does not support the effort parameter".
-- **Pushed a stale local image** built before a fix. Build from the commit (CI does this), and check the code inside the image.
+- **`output_config.effort` is 5.x-only**: Haiku 4.5 → 400 "does not support the effort parameter" (my first version check also matched `haiku-4-5`).
+- **Pushed a stale local image** built before a fix. Commit first, tag with the SHA, and check the code inside the image (CI avoids this).
 - **Chroma needs a writable dir**: `/var/task` is read-only in Lambda, so the DB is copied to `/tmp` on cold start.
-- **Small embedders blur rare proper nouns** ("Minfy" matched NaviGatr chunks), fixed with a keyword pass (`where_document={"$contains": ...}`).
+- **Small embedders blur rare proper nouns** ("Minfy" → NaviGatr chunks), fixed with a keyword pass (`where_document={"$contains": ...}`).
+- **`git push` ≠ `gh`**: pushing uses SSH keys; `gh` (PRs, repo variables, branch protection) needs its own login, and `gh auth login --web` authorizes whichever account the browser is signed into.
 
-## 8. Teardown
+## 9. Teardown
 
 ```bash
-aws lambda delete-function-url-config $P --function-name site-chatbot
 aws lambda delete-function $P --function-name site-chatbot
 aws logs delete-log-group $P --log-group-name /aws/lambda/site-chatbot
 aws ecr delete-repository $P --repository-name site-chatbot --force
-aws iam delete-role-policy --profile personal --role-name site-chatbot-lambda --policy-name bedrock-claude-haiku
+aws dynamodb delete-table $P --table-name site-chatbot-usage
+for pol in bedrock-claude-haiku daily-usage-counter; do
+  aws iam delete-role-policy --profile personal --role-name site-chatbot-lambda --policy-name $pol; done
 aws iam detach-role-policy --profile personal --role-name site-chatbot-lambda --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 aws iam delete-role --profile personal --role-name site-chatbot-lambda
+aws iam delete-role-policy --profile personal --role-name amplify-site-compute --policy-name invoke-site-chatbot
+aws iam delete-role --profile personal --role-name amplify-site-compute
 aws iam delete-role-policy --profile personal --role-name github-deploy-site-chatbot --policy-name deploy-site-chatbot
 aws iam delete-role --profile personal --role-name github-deploy-site-chatbot
 aws iam delete-open-id-connect-provider --profile personal --open-id-connect-provider-arn arn:aws:iam::$ACCT:oidc-provider/token.actions.githubusercontent.com
