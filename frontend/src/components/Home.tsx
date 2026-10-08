@@ -9,12 +9,11 @@ import { HiOutlineMail } from "react-icons/hi";
 import FeaturedSection from './FeaturedSection';
 // import { getFeaturedProjects } from '@/lib/getFeaturedProjects';
 
-import WorkExperienceSection from './WorkExperienceSection';
 import EducationSection from './EducationSection'; // new
 import ChatbotButton from './ChatbotButton';
 import ChatSection from './ChatSection';
 import BootSequence from './BootSequence';
-import GitGraph from './GitGraph';
+import GitLogTimeline from './GitLogTimeline';
 import Link from 'next/link';
 import { Project } from '@/types/project';
 // add this import with your other icons
@@ -130,7 +129,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
 
             <div className={styles.navLinks}>
               <Link href="#">Home</Link>
-              <Link href="#experience">Experience</Link>
+              <Link href="/experience">Experience</Link>
               <Link href="#education">Education</Link> {/* NEW */}
               <Link href="/projects">Projects</Link>
               <Link href="/builds">Builds</Link>
@@ -159,7 +158,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
         </div>
 
         <div className={styles.contentContainer} id="about">
-          <GitGraph />
+          <GitLogTimeline />
           <section id="featured">
   <FeaturedSection featuredProjects={featuredProjects} />
 </section>
@@ -177,7 +176,6 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
         
         
 
-        <WorkExperienceSection experiences={workExperiences} />
         <EducationSection educations={educations} /> {/* NEW */}
 
         <div id="chat" className={styles.chatPanel}>

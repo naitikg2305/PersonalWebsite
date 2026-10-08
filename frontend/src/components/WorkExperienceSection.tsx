@@ -14,7 +14,7 @@ export default function WorkExperienceSection({ experiences }: Props) {
       <h2 style={{ marginBottom: '1rem', color: '#00ff00' }}>Work Experience</h2>
 
       {experiences.map((exp) => (
-        <div key={exp.slug} className={styles.experienceCard}>
+        <div key={exp.slug} id={exp.slug} className={styles.experienceCard} style={{ scrollMarginTop: '6rem' }}>
           <h3>{exp.positions?.length ? exp.company : `${exp.title} — ${exp.company}`}</h3>
           <p><em>{exp.dates} • {exp.location}</em></p>
           {exp.positions && exp.positions.length > 0 ? (
