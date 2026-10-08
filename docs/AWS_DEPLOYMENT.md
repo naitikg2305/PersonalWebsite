@@ -218,6 +218,16 @@ gh variable set AWS_DEPLOY_ROLE_ARN --repo naitikg2305/PersonalWebsite \
   --body "arn:aws:iam::${ACCT}:role/github-deploy-site-chatbot"
 ```
 
+### 2.9b Git flow: protect main
+```bash
+# gh must be logged in as the repo owner (git push uses SSH keys; gh uses its own API token)
+gh auth switch -u naitikg2305
+gh api -X PUT repos/naitikg2305/PersonalWebsite/branches/main/protection --input - <<'EOF'
+{"required_status_checks":null,"enforce_admins":false,"required_pull_request_reviews":{"required_approving_review_count":0},
+ "restrictions":null,"allow_force_pushes":false,"allow_deletions":false}
+EOF
+```
+
 ### 2.10 Amplify Hosting (frontend)
 ```
 Console → AWS Amplify → Create new app → GitHub → authorize the Amplify GitHub App
