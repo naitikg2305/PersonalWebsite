@@ -234,8 +234,8 @@ export default function BootSequence({ onDone }: { onDone: () => void }) {
       : {
           zIndex: phase === 'dissolve' ? 3000 : -1,
           backgroundColor: 'transparent',
-          // full while the name shows; fades 75% (→ 0.25) as you scroll; dips to 0.10 over the timeline
-          opacity: (1 - 0.75 * fade) * (1 - focus) + 0.1 * focus,
+          // full while the name shows; fades 75% (→ 0.25) as you scroll; dips to 0.05 over the timeline
+          opacity: (1 - 0.75 * fade) * (1 - focus) + 0.05 * focus,
           filter: 'none',
         };
 
