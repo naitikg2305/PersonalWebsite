@@ -46,8 +46,8 @@
 .container::after {
   content: '';
   position: fixed;
-  left: 50%;
-  top: 6rem;
+  left: 64%; /* behind the name (which sits at 64%) */
+  top: 30vh;
   width: 38rem;
   height: 18rem;
   transform: translateX(-50%);
