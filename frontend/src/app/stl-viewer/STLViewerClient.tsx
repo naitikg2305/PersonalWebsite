@@ -1,4 +1,5 @@
 'use client';
+import BackButton from '@/components/BackButton';
 
 import { useSearchParams } from 'next/navigation';
 import STLViewer from '../../components/STLViewer';
@@ -13,6 +14,7 @@ export default function STLViewerClient() {
 
   return (
     <div>
+      <BackButton />
       <h1 style={{ color: '#00ff00', textAlign: 'center', margin: '1rem 0' }}>
         3D STL Viewer
       </h1>
