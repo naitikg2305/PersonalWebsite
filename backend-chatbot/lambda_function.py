@@ -3,7 +3,7 @@
 import base64
 import json
 
-from chatbot import answer
+from chatbot import answer_with_sources
 
 
 def _json(status: int, payload: dict) -> dict:
@@ -19,12 +19,13 @@ def handler(event, context):
     if event.get("isBase64Encoded"):
         body = base64.b64decode(body).decode("utf-8")
     try:
-        question = json.loads(body).get("query", "")
+        payload = json.loads(body)
+        question, history = payload.get("query", ""), payload.get("history")
     except (json.JSONDecodeError, AttributeError):
         return _json(400, {"response": "Invalid request."})
 
     try:
-        return _json(200, {"response": answer(question)})
+        return _json(200, answer_with_sources(question, history))
     except Exception as e:  # log for CloudWatch, keep internals out of the response
         print(f"chat error: {e!r}")
         return _json(500, {"response": "Sorry, something went wrong. Please try again."})

@@ -1,0 +1,137 @@
+/* Software Projects section on /projects — matches the dark/green terminal look
+   of landing.module.css (.projectCard etc.) without depending on an STL/image. */
+
+.section {
+  margin-bottom: 3.5rem;
+}
+
+.sectionSubtitle {
+  color: #888;
+  font-family: monospace;
+  text-align: center;
+  margin: -1.25rem 0 2rem;
+  font-size: 0.95rem;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: #111;
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  color: inherit;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.5),
+    0 6px 12px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 0, 0.15);
+  border-color: rgba(0, 255, 0, 0.3);
+}
+
+.cardLink {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Terminal-style title bar in place of an image */
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.9rem;
+  background: #0b0b0b;
+  border-bottom: 1px solid #222;
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #5a5a5a;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #2a2a2a;
+}
+
+.dotActive {
+  background: #00ff00;
+  box-shadow: 0 0 6px rgba(0, 255, 0, 0.6);
+}
+
+.path {
+  margin-left: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-bottom: 1px solid #222;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 1rem 1rem 1.1rem;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  color: #00ff00;
+  font-size: 1.15rem;
+}
+
+.summary {
+  color: #ccc;
+  margin: 0 0 1rem;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.25rem;
+}
+
+.tag {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #9fef9f;
+  background: rgba(0, 255, 0, 0.06);
+  border: 1px solid rgba(0, 255, 0, 0.25);
+  border-radius: 4px;
+  padding: 0.15rem 0.45rem;
+}
+
+.github {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.6rem;
+  color: #aaa;
+  transition: color 0.2s ease;
+  line-height: 0;
+}
+
+.github:hover {
+  color: #00ff00;
+}

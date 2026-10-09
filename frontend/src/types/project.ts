@@ -12,6 +12,8 @@ export interface Project {
   docs?: string[];
   stlCard?: string;
   github?: string;
+  /** 'software' for projects shown in the Software Projects section */
+  category?: string;
   files?: {
     name: string;
     path: string;

@@ -1,5 +1,6 @@
 // src/app/doc-viewer/DocViewerClient.tsx
 'use client';
+import BackButton from '@/components/BackButton';
 
 import { useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -24,6 +25,7 @@ export default function DocViewerClient() {
 
   return (
     <div className={styles.projectDetail}>
+      <BackButton />
       <h1 className={styles.sectionTitle}>📚 Document Viewer</h1>
       <div className={styles.markdownContent}>
         <ReactMarkdown

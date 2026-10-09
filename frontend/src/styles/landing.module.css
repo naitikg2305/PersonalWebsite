@@ -1,9 +1,8 @@
 .container {
+  position: relative;
+  isolation: isolate; /* lets the boot terminal sit between the background image and the content */
   min-height: 100vh;
-  background-image: url('image1.png'); /* Replace with your image */
-  background-size: cover;
-  background-attachment: fixed;
-  background-position: center;
+  background: #07090a; /* v2 base: a hair warmer than pure black */
   color: #00ff00;
   font-family: monospace;
   padding: 2rem;
@@ -12,7 +11,7 @@
 .nameContainer {
   position: fixed;
   top: 40%;
-  left: 50%;
+  left: 64%; /* sits right of the live log, which runs down the left side */
   transform: translate(-50%, -50%);
   font-size: 4rem;
   font-weight: bold;
@@ -31,6 +30,34 @@
   color: #00ff00;
   text-shadow: none;
 }
+/* v2 background layers, under the live log (log is z-index -1, these are -2) */
+.container::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 50% 0%, black 30%, transparent 75%);
+}
+.container::after {
+  content: '';
+  position: fixed;
+  left: 64%; /* behind the name (which sits at 64%) */
+  top: 30vh;
+  width: 38rem;
+  height: 18rem;
+  transform: translateX(-50%);
+  z-index: -2;
+  pointer-events: none;
+  border-radius: 9999px;
+  background: rgb(61 255 140 / 0.10);
+  filter: blur(110px);
+}
+
 .featuredSection {
   padding: 4rem 2rem;
   background: transparent; /* so background image shows through */
@@ -92,7 +119,7 @@
 
 
 .terminal {
-  background-color: #000000e6;
+  background-color: #000;
   border: 1px solid #00ff00;
   padding: 2rem;
   border-radius: 5px;
@@ -153,10 +180,35 @@
 }
 
 .experienceSection {
-  background-color: #000; /* black */
-  color: #fff;            /* white */
+  background: transparent; /* the live log shows between the job panels */
+  color: #fff;
   padding: 2rem;
-  
+}
+
+/* each job is its own black panel, like the about terminal */
+.experienceSection .experienceCard {
+  background-color: #000;
+  border: 1px solid #00ff0055;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 0 12px #00ff0026;
+}
+
+.experienceSection > h2 {
+  display: inline-block;
+  background-color: #000;
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+}
+
+/* chat gets the same panel treatment */
+.chatPanel {
+  background-color: #000;
+  border: 1px solid #00ff0055;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  box-shadow: 0 0 12px #00ff0026;
+  margin: 2rem;
 }
 
 .experienceCard {

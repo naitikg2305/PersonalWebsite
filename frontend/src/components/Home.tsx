@@ -2,39 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import styles from '../styles/landing.module.css';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { HiOutlineMail } from "react-icons/hi";
-import FeaturedSection from './FeaturedSection';
 // import { getFeaturedProjects } from '@/lib/getFeaturedProjects';
 
-import WorkExperienceSection from './WorkExperienceSection';
-import EducationSection from './EducationSection'; // new
-import ChatbotButton from './ChatbotButton';
-import ChatSection from './ChatSection';
+import { useChat } from './site/ChatProvider';
+import { usePalette } from './site/CommandPalette';
+import BootSequence from './BootSequence';
+import GitLogTimeline from './GitLogTimeline';
 import Link from 'next/link';
-import { Project } from '@/types/project';
 // add this import with your other icons
-import { HiOutlineDocumentText } from "react-icons/hi";
+import { HiOutlineDocumentText, HiOutlineSearch } from "react-icons/hi";
 
 
-type Experience = {
-  title: string;
-  company: string;
-  dates: string;
-  location: string;
-  slug: string;
-  summaryPoints: string[];
-};
-
-interface HomeProps {
-  workExperiences: Experience[];
-  educations: Experience[];
-  featuredProjects: Project[];
-}
-
-export default function Home({ workExperiences, educations, featuredProjects  }: HomeProps) {
+export default function Home() {
   const name = 'Naitik Gupta';
   const quote = 'Decode the world to build it better.';
 
@@ -42,14 +23,18 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
   const [scrolled, setScrolled] = useState(false);
   const [nameIndex, setNameIndex] = useState(0);
   const [showQuote, setShowQuote] = useState(false);
-  const [aboutContent, setAboutContent] = useState('');
+  const { open: chatOpen, toggle: toggleChat, ask } = useChat();
+  const [askDraft, setAskDraft] = useState('');
+  const { openPalette } = usePalette();
+  const [booted, setBooted] = useState(false); // name types only after the boot intro
   const [showScrollHint, setShowScrollHint] = useState(false);
 
   // After 5s on the landing screen, start nudging the name up to reveal a scroll hint
   useEffect(() => {
+    if (!booted) return;
     const timeout = setTimeout(() => setShowScrollHint(true), 5000);
     return () => clearTimeout(timeout);
-  }, []);
+  }, [booted]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -61,12 +46,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
   }, []);
 
   useEffect(() => {
-    fetch('/content/about/about.md')
-      .then((res) => res.text())
-      .then(setAboutContent);
-  }, []);
-
-  useEffect(() => {
+    if (!booted) return;
     if (nameIndex < name.length) {
       const timeout = setTimeout(() => setNameIndex(nameIndex + 1), 150);
       return () => clearTimeout(timeout);
@@ -74,7 +54,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
       const quoteTimeout = setTimeout(() => setShowQuote(true), 400);
       return () => clearTimeout(quoteTimeout);
     }
-  }, [nameIndex]);
+  }, [nameIndex, booted]);
 
   return (
     <div className={styles.pageWrapper}>
@@ -83,7 +63,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
         style={{ transform: `translateY(${scrollY * 0.5}px)` }}
       />
 
-      {!scrolled && (
+      {!scrolled && booted && (
         <div className={styles.floatingImageWrapper}>
           <img
             src="/profile.jpg"
@@ -94,38 +74,72 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
       )}
 
       <div className={styles.container}>
+        <BootSequence onDone={() => setBooted(true)} typeAbout={showQuote} />
         {scrolled && (
-          <div className={styles.navbar}>
+          <div className={styles.navbar} data-site-nav style={{ alignItems: 'center' }}>
             <div className={styles.navTitle} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span>Naitik Gupta</span>
-              <a href="https://github.com/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#fff' }}>
+              <Link href="/" className="font-mono text-[1.05rem] font-normal" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                <span className="text-[#00ff88]">naitik</span>
+                <span className="text-neutral-500">@gupta:~$</span>
+                <span className="ml-1 inline-block h-[1.05em] w-[0.55em] animate-pulse bg-[#00ff88] align-[-0.15em]" />
+              </Link>
+              <a href="https://github.com/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#fff' }} aria-label="GitHub">
                 <FaGithub />
               </a>
-              <a href="https://linkedin.com/in/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#0077b5' }}>
+              <a href="https://linkedin.com/in/naitikg2305" target="_blank" rel="noopener noreferrer" style={{ color: '#0077b5' }} aria-label="LinkedIn">
                 <FaLinkedin />
               </a>
-              <a href="mailto:naitikg2305@gmail.com" style={{ color: '#00ff00' }}>
+              <a href="mailto:naitikg2305@gmail.com" style={{ color: '#00ff00' }} aria-label="Email">
                 <HiOutlineMail />
               </a>
-              <a
-                href="/resume.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Resume (PDF)"
-                title="Resume (PDF)"
-                style={{ color: '#e5e7eb' }} 
-    >
-      <HiOutlineDocumentText />
-
-
+              <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" aria-label="Resume (PDF)" title="Resume (PDF)" style={{ color: '#e5e7eb' }}>
+                <HiOutlineDocumentText />
               </a>
-              <ChatbotButton />
+            </div>
+
+            {/* middle: ask the AI inline (answers drop down from under the navbar), then site search */}
+            <div className="mx-6 flex min-w-0 max-w-2xl flex-1 items-center gap-3">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!askDraft.trim()) return toggleChat();
+                  ask(askDraft);
+                  setAskDraft('');
+                }}
+                className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[#00ff88]/25 bg-[#0d1110] py-1 pl-3 pr-1 shadow-[0_0_14px_rgba(0,255,136,0.06)] transition focus-within:border-[#00ff88]/60"
+              >
+                <span className="font-mono text-[#00ff88]">❯</span>
+                <input
+                  value={askDraft}
+                  onChange={(e) => setAskDraft(e.target.value)}
+                  placeholder="e.g. What did Naitik build at Grubhub?"
+                  maxLength={1000}
+                  aria-label="Ask the AI about Naitik"
+                  className="min-w-0 flex-1 bg-transparent font-sans text-[14px] font-normal text-neutral-100 outline-none placeholder:text-neutral-500"
+                />
+                <button type="submit" className="rounded-md bg-[#1f5c3a] px-3.5 py-1 font-sans text-[13px] font-semibold text-neutral-100 transition hover:bg-[#25724a]">
+                  ask
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleChat}
+                  aria-expanded={chatOpen}
+                  aria-label={chatOpen ? 'Hide chat' : 'Show chat'}
+                  title={chatOpen ? 'Hide chat' : 'Show chat'}
+                  className="px-1 font-mono text-[12px] text-neutral-500 transition hover:text-[#00ff88]"
+                >
+                  {chatOpen ? '▴' : '▾'}
+                </button>
+              </form>
+              <button onClick={openPalette} aria-label="Search the site" title="Search (Ctrl K or /)" className="shrink-0 text-[1.15rem] text-neutral-300 transition hover:text-[#00ff88]">
+                <HiOutlineSearch />
+              </button>
             </div>
 
             <div className={styles.navLinks}>
               <Link href="#">Home</Link>
-              <Link href="#experience">Experience</Link>
-              <Link href="#education">Education</Link> {/* NEW */}
+              <Link href="/experience">Experience</Link>
+              <Link href="/education/UMD">Education</Link>
               <Link href="/projects">Projects</Link>
               <Link href="/builds">Builds</Link>
               <Link href="/knowledge">Knowledge</Link>
@@ -153,28 +167,7 @@ export default function Home({ workExperiences, educations, featuredProjects  }:
         </div>
 
         <div className={styles.contentContainer} id="about">
-          <section id="featured">
-  <FeaturedSection featuredProjects={featuredProjects} />
-</section>
-          <div className={styles.terminal}>
-            <div className={styles.terminalHeader}>&quot;&quot;</div>
-            <div className={styles.terminalBody}>
-              
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {aboutContent}
-              </ReactMarkdown>
-              <span className={styles.cursor}>█</span>
-            </div>
-          </div>
-        </div>
-        
-        
-
-        <WorkExperienceSection experiences={workExperiences} />
-        <EducationSection educations={educations} /> {/* NEW */}
-
-        <div id="chat">
-          <ChatSection />
+          <GitLogTimeline />
         </div>
       </div>
     </div>

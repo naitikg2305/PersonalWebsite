@@ -9,6 +9,7 @@ import os
 import pathlib
 import re
 import shutil
+import time
 
 import chromadb
 from anthropic import AnthropicBedrock
@@ -22,6 +23,8 @@ MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-haiku-5-5")
 REGION = os.environ.get("BEDROCK_REGION", "us-east-1")
 TOP_K = int(os.environ.get("TOP_K", "6"))
 MAX_QUERY_CHARS = 1000
+MAX_HISTORY = 6  # prior messages (3 exchanges) kept as conversation memory
+MAX_HISTORY_CHARS = 1500
 
 SYSTEM_PROMPT = """You are the assistant on Naitik Gupta's personal website (naitikg.us). \
 Visitors ask about Naitik's work experience, projects, skills, education, interests, and the \
@@ -115,10 +118,11 @@ BUSY_MESSAGE = (
 )
 
 
-def _under_daily_cap() -> bool:
-    """Atomically count today's chats; refuse once the cap is reached (hard ceiling on Bedrock spend)."""
+def _under_daily_cap() -> tuple[bool, int | None]:
+    """Atomically count today's chats; refuse once the cap is reached (hard ceiling on Bedrock spend).
+    Returns (allowed, chats counted today) — count is None when no table is configured (local dev)."""
     if not DAILY_CAP_TABLE:
-        return True
+        return True, None
     import time
 
     import boto3
@@ -126,7 +130,7 @@ def _under_daily_cap() -> bool:
 
     day = time.strftime("%Y-%m-%d", time.gmtime())
     try:
-        boto3.client("dynamodb", region_name=REGION).update_item(
+        result = boto3.client("dynamodb", region_name=REGION).update_item(
             TableName=DAILY_CAP_TABLE,
             Key={"day": {"S": day}},
             UpdateExpression="ADD #n :one SET expires_at = :exp",
@@ -137,23 +141,66 @@ def _under_daily_cap() -> bool:
                 ":cap": {"N": str(DAILY_CAP)},
                 ":exp": {"N": str(int(time.time()) + 7 * 86400)},  # TTL cleans old days
             },
+            ReturnValues="UPDATED_NEW",
         )
-        return True
+        return True, int(result["Attributes"]["count"]["N"])
     except ClientError as e:
         if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
-            return False
+            return False, DAILY_CAP
         raise
 
 
-def answer(question: str) -> str:
+_cold_start = True  # first invocation in this Lambda container
+
+
+def _clean_history(history) -> list[dict]:
+    """Prior turns from the browser session → alternating user/assistant messages (untrusted input)."""
+    if not isinstance(history, list):
+        return []
+    turns = []
+    for m in history[-MAX_HISTORY:]:
+        if not isinstance(m, dict) or m.get("role") not in ("user", "assistant") or not isinstance(m.get("text"), str):
+            continue
+        text = m["text"].strip()[:MAX_HISTORY_CHARS]
+        if not text:
+            continue
+        if turns and turns[-1]["role"] == m["role"]:
+            turns[-1]["content"] += "\n\n" + text
+        else:
+            turns.append({"role": m["role"], "content": text})
+    while turns and turns[0]["role"] != "user":  # must start with the user...
+        turns.pop(0)
+    if turns and turns[-1]["role"] != "assistant":  # ...and end on an answer, before the new question
+        turns.pop()
+    return turns
+
+
+def answer_with_sources(question: str, history=None) -> dict:
+    """Answer + the site pages it used + a real trace for the site's live terminal:
+    {"response": str, "sources": [{"title", "source"}], "trace": {...timings, chunks, tokens...}}."""
+    global _cold_start
+    t0 = time.perf_counter()
+    trace: dict = {"cold_start": _cold_start, "model": MODEL_ID}
+    _cold_start = False
+
     question = (question or "").strip()
     if not question:
-        return "Please ask a question."
+        return {"response": "Please ask a question.", "sources": [], "trace": trace}
     question = question[:MAX_QUERY_CHARS]
-    if not _under_daily_cap():
-        return BUSY_MESSAGE
 
-    chunks = retrieve(question)
+    allowed, count = _under_daily_cap()
+    trace.update(daily_count=count, daily_cap=DAILY_CAP if DAILY_CAP_TABLE else None)
+    if not allowed:
+        trace["capped"] = True
+        return {"response": BUSY_MESSAGE, "sources": [], "trace": trace}
+
+    turns = _clean_history(history)
+    trace["history_turns"] = len(turns)
+    # follow-ups ("what about the other one?") retrieve better with the previous question attached
+    last_user = next((t["content"] for t in reversed(turns) if t["role"] == "user"), "")
+    t = time.perf_counter()
+    chunks = retrieve(f"{last_user}\n{question}" if last_user else question)
+    trace.update(retrieve_ms=round((time.perf_counter() - t) * 1000), chunks=len(chunks), keywords=_keywords(question)[:3])
     context = "\n\n".join(
         f'<excerpt source="{c["source"]}" title="{c["title"]}">\n{c["text"]}\n</excerpt>'
         for c in chunks
@@ -162,11 +209,13 @@ def answer(question: str) -> str:
     # Haiku 5.5 thinks by default; low effort keeps chat answers fast and cheap.
     # Older models (Haiku 4.5) don't accept output_config.effort, so only send it to 5.x.
     extra = {"output_config": {"effort": "low"}} if re.search(r"claude-[a-z]+-5-", MODEL_ID) else {}
+    t = time.perf_counter()
     response = _get_client().messages.create(
         model=MODEL_ID,
         max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=[
+            *turns,
             {
                 "role": "user",
                 "content": f"<context>\n{context}\n</context>\n\nVisitor's question: {question}",
@@ -174,6 +223,25 @@ def answer(question: str) -> str:
         ],
         **extra,
     )
+    trace.update(
+        bedrock_ms=round((time.perf_counter() - t) * 1000),
+        input_tokens=response.usage.input_tokens,
+        output_tokens=response.usage.output_tokens,
+        stop_reason=response.stop_reason,
+    )
+
+    sources, seen = [], set()
+    for c in chunks:  # unique pages, in retrieval order
+        if c["source"] not in seen:
+            seen.add(c["source"])
+            sources.append({"title": c["title"], "source": c["source"]})
+    trace["total_ms"] = round((time.perf_counter() - t0) * 1000)
+
     if response.stop_reason == "refusal":
-        return "Sorry, I can't help with that one."
-    return "".join(block.text for block in response.content if block.type == "text").strip()
+        return {"response": "Sorry, I can't help with that one.", "sources": [], "trace": trace}
+    text = "".join(block.text for block in response.content if block.type == "text").strip()
+    return {"response": text, "sources": sources[:4], "trace": trace}
+
+
+def answer(question: str) -> str:
+    return answer_with_sources(question)["response"]

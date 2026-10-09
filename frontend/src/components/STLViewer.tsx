@@ -3,7 +3,7 @@
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, Bounds } from '@react-three/drei';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
-import { Suspense, useMemo, useRef } from 'react';
+import { Suspense, useMemo, useRef, type RefObject } from 'react';
 import { BufferGeometry, Group } from 'three';
 
 function FitOnLoad({ children }: { children: React.ReactNode }) {
@@ -16,7 +16,9 @@ function FitOnLoad({ children }: { children: React.ReactNode }) {
 
 
 function Model({ url }: { url: string }) {
-  const geometry = useLoader(STLLoader, url) as BufferGeometry;
+  const loaded = useLoader(STLLoader, url) as BufferGeometry;
+  // center on the origin so spinning/tilting turns the model in place instead of swinging it
+  const geometry = useMemo(() => loaded.clone().center(), [loaded]);
   const mat = useMemo(
     () => ({ color: '#00ff00', roughness: 0.6, metalness: 0.1 }),
     []
@@ -28,19 +30,38 @@ function Model({ url }: { url: string }) {
   );
 }
 
+/** Pointer position over the surrounding card, normalized to -1..1 (null when the pointer is away). */
+export type PointerRef = RefObject<{ x: number; y: number } | null>;
+
 function RotatingModel({
   url,
   hover,
+  spin,
+  pointer,
 }: {
   url: string;
   hover: boolean;
+  spin: boolean;
+  pointer?: PointerRef;
 }) {
   const groupRef = useRef<Group>(null);
+  const base = useRef<number | null>(null); // spin angle when the pointer arrived
 
   useFrame((_, delta) => {
-    if (hover && groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.6;
+    const g = groupRef.current;
+    if (!g) return;
+    const p = pointer?.current;
+    if (p) {
+      // follow the pointer like a click-drag: left/right turns, up/down tilts (eased)
+      if (base.current === null) base.current = g.rotation.y;
+      const k = 1 - Math.exp(-delta * 6);
+      g.rotation.y += (base.current + p.x * Math.PI * 0.75 - g.rotation.y) * k;
+      g.rotation.x += (p.y * 0.5 - g.rotation.x) * k;
+      return;
     }
+    base.current = null;
+    g.rotation.x += (0 - g.rotation.x) * (1 - Math.exp(-delta * 3));
+    if (spin || hover) g.rotation.y += delta * 0.6;
   });
 
   return (
@@ -58,12 +79,17 @@ export default function STLViewer({
   hover = false,
   controls = true,
   zoom = true,
+  spin = false,
+  pointer,
 }: {
   url: string;
   height?: number | string;
   hover?: boolean;
   controls?: boolean;
   zoom?: boolean;
+  /** rotate continuously (otherwise only while `hover`) */
+  spin?: boolean;
+  pointer?: PointerRef;
 }) {
   return (
     <div style={{ width: '100%', height }}>
@@ -71,7 +97,7 @@ export default function STLViewer({
         <ambientLight intensity={0.6} />
         <directionalLight position={[8, 10, 6]} intensity={0.9} />
         <Suspense fallback={null}>
-          <RotatingModel url={url} hover={hover} />
+          <RotatingModel url={url} hover={hover} spin={spin} pointer={pointer} />
         </Suspense>
         {controls && <OrbitControls enableZoom={zoom} />}
       </Canvas>

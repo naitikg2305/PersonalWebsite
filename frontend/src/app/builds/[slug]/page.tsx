@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs'; // optional, if you're using fs inside readBuild
 
+import Link from 'next/link';
 import { readBuild } from '../../../lib/readBuild';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -120,9 +121,15 @@ function FileList({
             : `/content/builds/${prefix}/${slug}/${file}`;
           return (
             <li key={idx}>
-              <a href={href} target="_blank" rel="noopener noreferrer">
-                {fileName}
-              </a>
+              {isViewer ? (
+                // viewers (markdown / STL) open in the same tab
+                <Link href={href}>{fileName}</Link>
+              ) : (
+                // raw files (PDFs, downloads) still open in a new tab
+                <a href={href} target="_blank" rel="noopener noreferrer">
+                  {fileName}
+                </a>
+              )}
             </li>
           );
         })}
