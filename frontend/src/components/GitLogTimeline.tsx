@@ -46,6 +46,7 @@ type Row = MainCommit | ProjectCommit;
 const MAIN: MainCommit[] = [
   { type: 'main', date: '2021-08', title: 'B.S. Computer Engineering', org: 'University of Maryland', period: 'Aug 2021 – May 2025', bullets: ['ML, AI, OS, computer architecture', 'Capstone: NaviGatr'], href: '/education/UMD' },
   { type: 'main', date: '2022-08', title: 'Software Development Engineer', org: 'Engineering IT, UMD', period: 'Aug 2022 – May 2024', bullets: ['Built Pinpoint: lab access for 100+ users', 'Swipe login + Canvas Badges training gates'], href: '/experience#engineering-it' },
+  { type: 'main', date: '2022-08', title: 'Clark School Student Ambassador', org: 'A. James Clark School of Engineering, UMD', period: 'Aug 2022 – 2023', bullets: ['Campus tours + info sessions for admitted students', 'ClarkLead: welcomed incoming admits'], href: '/experience#clark-ambassador' },
   { type: 'main', date: '2024-05', title: 'Lead Software Developer', org: 'Engineering IT, UMD', period: 'May 2024 – May 2025', bullets: ['Led a 10-person Scrum team', '4 production features, hiring + onboarding'], href: '/experience#engineering-it' },
   { type: 'main', date: '2024-06', title: 'Software Engineering Intern', org: 'Zillion Technologies', period: 'Jun – Aug 2024', bullets: ['SharePoint search + RAG chatbot', 'Delta re-indexing of changed files'], href: '/experience#zillion' },
   { type: 'main', date: '2025-05', title: '🎓 Graduated', org: 'University of Maryland', period: 'May 2025', bullets: ['B.S. Computer Engineering'], href: '/education/UMD', milestone: true },

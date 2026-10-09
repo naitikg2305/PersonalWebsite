@@ -16,9 +16,6 @@ export interface IndexItem {
   paths: string[];
 }
 
-// retired from the site but still on disk
-const HIDDEN = new Set(['clark-ambassador.md']);
-
 const CONTENT = path.join(process.cwd(), 'public', 'content');
 
 async function readMd(rel: string) {
@@ -36,7 +33,7 @@ async function list(rel: string): Promise<string[]> {
 export async function getSiteIndex(): Promise<IndexItem[]> {
   const items: IndexItem[] = []; // (the About page is off the site for now)
 
-  for (const file of (await list('employment')).filter((f) => f.endsWith('.md') && !HIDDEN.has(f))) {
+  for (const file of (await list('employment')).filter((f) => f.endsWith('.md'))) {
     const { data } = await readMd(`employment/${file}`);
     items.push({
       title: `${data.company}: ${data.title}`,
