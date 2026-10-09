@@ -1,39 +1,35 @@
 ---
-title: "Student Ambassador"
+title: "Clark School Student Ambassador"
 order: 4
-company: "Clark School of Engineering"
-dates: "2022–2023"
-location: "University of Maryland"
+company: "A. James Clark School of Engineering"
+dates: "Oct 2022 – May 2024"
+location: "University of Maryland, College Park, MD"
 slug: "clark-ambassador"
 summaryPoints:
-  - Represented the school at outreach and recruiting events.
-  - Provided campus tours and answered prospective questions.
-  - Helped plan events for incoming students and families.
+  - Represented the Clark School to admitted students and their families.
+  - Led guided tours of the engineering buildings and presented at open houses and orientations.
+  - "ClarkLead: hosted a welcome table for incoming admits."
 ---
 
 ## Contributions
 
-- Represented the engineering school in outreach and recruiting events.
-- Gave campus tours, answered prospective student questions.
-- Collaborated on organizing events and webinars.
+- Represented the A. James Clark School of Engineering to admitted students and their families, helping them decide on and transition into engineering at Maryland.
+- Led guided tours of the engineering buildings for admitted students and families.
+- Gave presentations about the Clark School's programs and student life at open houses, Q&A panels and orientation sessions.
+- Supported recruitment events and webinars for prospective and admitted students.
+- ClarkLead: hosted a welcome table for incoming admits, answering questions about classes, housing and getting involved.
 
-# Clark Ambassadors  
-**Role**: Student Ambassador  
+# Clark School Student Ambassador  
+**Role**: Clark School Student Ambassador  
 **Organization**: A. James Clark School of Engineering, University of Maryland  
-**Dates**: [Start Date] – [End Date]  
+**Dates**: Oct 2022 – May 2024  
 **Location**: College Park, MD  
 
 ## 🎯 Role Overview  
-As a Clark Ambassador, I represented the A. James Clark School of Engineering in various outreach and recruitment initiatives. I engaged with prospective students, families, and alumni to share insights about the engineering programs, campus life, and student opportunities at UMD.
+As a Clark School Student Ambassador, I represented the A. James Clark School of Engineering to admitted students and their families, helping them decide on and transition into engineering at Maryland.
 
 ## 🛠️ Key Responsibilities  
-- Led campus tours for admitted students and their families, emphasizing academic programs, labs, student organizations, and facilities.  
-- Participated in open house events, Q&A panels, and orientation sessions to support new student onboarding.  
-- Collaborated with the Clark School staff and fellow ambassadors to organize and execute recruitment events.  
-- Shared personal experiences in engineering, internships, and student life to help prospective students make informed decisions.  
-
-## ✨ Impact & Skills  
-- Honed public speaking, leadership, and interpersonal communication skills.  
-- Gained experience in event coordination and peer mentorship.  
-- Contributed to the successful onboarding and recruitment of hundreds of prospective engineering students.
-
+- Led guided tours of the engineering buildings for admitted students and families.  
+- Gave presentations about the Clark School's programs and student life at open houses, Q&A panels and orientation sessions.  
+- Supported recruitment events and webinars for prospective and admitted students.  
+- ClarkLead: hosted a welcome table for incoming admits, answering questions about classes, housing and getting involved.  
