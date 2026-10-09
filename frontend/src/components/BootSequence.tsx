@@ -193,7 +193,10 @@ export default function BootSequence({ onDone, onIntro }: { onDone: () => void; 
       if (!cancelled) finish();
     })();
 
-    const skip = () => finish(true);
+    const skip = () => {
+      skipIntro.current = true; // a click/key skips the name + About animation too
+      finish(true);
+    };
     window.addEventListener('keydown', skip);
     window.addEventListener('pointerdown', skip);
     return () => {
@@ -214,6 +217,7 @@ export default function BootSequence({ onDone, onIntro }: { onDone: () => void; 
   const [about, setAbout] = useState<string | null>(null); // About pane text (typed progressively)
   const [bannerCols, setBannerCols] = useState(-1); // columns of the banner drawn so far (-1 = not yet)
   const introStarted = useRef(false);
+  const skipIntro = useRef(false); // set by any click/key: the intro jumps straight to its end
   // latched once the boot script ends; the dissolve → backdrop change must not restart the intro
   const introGo = phase !== 'boot';
   useEffect(() => {
@@ -221,14 +225,18 @@ export default function BootSequence({ onDone, onIntro }: { onDone: () => void; 
     introStarted.current = true;
     let cancelled = false;
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-    let instant = false;
+    let reduce = false;
     try {
-      instant = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     } catch {}
+    const fast = () => reduce || skipIntro.current; // checked live, so a click mid-intro jumps to the end
+    const onSkip = () => (skipIntro.current = true);
+    window.addEventListener('keydown', onSkip);
+    window.addEventListener('pointerdown', onSkip);
     const type = async (text: string, ms: number) => {
-      for (let i = 1; i <= text.length && !cancelled; i++) {
+      for (let i = 1; i <= text.length && !cancelled && !fast(); i++) {
         setTyping(text.slice(0, i));
-        if (!instant) await sleep(ms);
+        await sleep(ms);
       }
       setTyping('');
     };
@@ -236,34 +244,34 @@ export default function BootSequence({ onDone, onIntro }: { onDone: () => void; 
     (async () => {
       const aboutText = fetch('/content/about/about.md').then((r) => r.text()).then(plain);
       // `./naitik --init` (the boot script's last line) prints the banner, built left to right
-      for (let c = 0; c <= BANNER_W && !cancelled; c += instant ? BANNER_W : 1) {
+      for (let c = 0; c <= BANNER_W && !cancelled && !fast(); c++) {
         setBannerCols(c);
-        if (!instant) await sleep(24);
+        await sleep(24);
       }
       if (cancelled) return;
       setBannerCols(-1);
       add('banner', BANNER.join('\n'));
-      if (!instant) await sleep(200);
-      for (let i = 1; i <= TAGLINE.length && !cancelled; i++) {
+      if (!fast()) await sleep(200);
+      for (let i = 1; i <= TAGLINE.length && !cancelled && !fast(); i++) {
         setTagline(TAGLINE.slice(0, i));
-        if (!instant) await sleep(38);
+        await sleep(38);
       }
       if (cancelled) return;
       setTagline(null);
       add('tagline', TAGLINE);
-      if (!instant) await sleep(400);
+      if (!fast()) await sleep(400);
       await type('cat about.md', 40);
       if (cancelled) return;
       add('cmd', 'cat about.md');
       const text = await aboutText;
-      for (let i = instant ? text.length : 0; i <= text.length && !cancelled; i += 3) {
+      for (let i = 0; i <= text.length && !cancelled && !fast(); i += 3) {
         setAbout(text.slice(0, i));
-        if (!instant) await sleep(10);
+        await sleep(10);
       }
       if (cancelled) return;
       setAbout(null);
       add('about', text);
-      if (!instant) await sleep(300);
+      if (!fast()) await sleep(300);
       add('dim', 'scroll ⌄ to see the git log');
       setIntroDone(true);
       onIntro?.();
@@ -271,6 +279,8 @@ export default function BootSequence({ onDone, onIntro }: { onDone: () => void; 
     return () => {
       cancelled = true;
       introStarted.current = false;
+      window.removeEventListener('keydown', onSkip);
+      window.removeEventListener('pointerdown', onSkip);
     };
   }, [introGo, onIntro]);
   const [tagline, setTagline] = useState<string | null>(null);
