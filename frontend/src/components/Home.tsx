@@ -98,7 +98,7 @@ export default function Home() {
             </div>
 
             {/* middle: ask the AI inline (answers drop down from under the navbar), then site search */}
-            <div className="mx-6 flex min-w-0 max-w-2xl flex-1 items-center gap-3">
+            <div className="mx-4 flex min-w-0 max-w-2xl flex-1 items-center gap-2">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -131,8 +131,15 @@ export default function Home() {
                   {chatOpen ? '▴' : '▾'}
                 </button>
               </form>
-              <button onClick={openPalette} aria-label="Search the site" title="Search (Ctrl K or /)" className="shrink-0 text-[1.15rem] text-neutral-300 transition hover:text-[#00ff88]">
-                <HiOutlineSearch />
+              <button
+                onClick={openPalette}
+                aria-label="Search the site"
+                title="Search the site (Ctrl K or /)"
+                className="flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-700 bg-[#0d1110] px-2.5 py-1 font-mono text-[12px] font-normal text-neutral-300 transition hover:border-[#00ff88]/60 hover:text-[#00ff88]"
+              >
+                <HiOutlineSearch size={14} />
+                search
+                <kbd className="rounded border border-neutral-700 px-1 text-[10px] leading-4 text-neutral-500">/</kbd>
               </button>
             </div>
 
