@@ -47,6 +47,10 @@ Qwen isn't a browser. Search, HTTP fetching, HTML parsing and citations are tool
 - **Prompt-injection hygiene.** Retrieved text is marked untrusted, and the model is told to ignore instructions inside it and not to claim it read a full page when it only got a snippet.
 - **Context budgeting** for the 8K window: the system prompt and fresh evidence are kept ahead of old assistant turns, so stale claims don't crowd out current sources.
 
+## Reusing the models in coding-agent harnesses
+
+The same local Ollama/Qwen models also serve as the model backend inside the **Claude Code** and **Codex** coding-agent harnesses. That way routine coding-agent work runs on my laptop GPU (RTX 5070 Ti, 12 GB) instead of going through paid API calls, which keeps my API costs down.
+
 ## What I learned
 - **Download size isn't VRAM usage.** The KV cache and runtime buffers add up, so I check real placement with `ollama ps` and `nvidia-smi`.
 - **Reasoning models need care.** Turning Qwen3's thinking off with `think: false` made it dump its reasoning into the answer instead, so I show it in a separate panel. Even "say hi" uses about 230 tokens, mostly reasoning. That's a few seconds on GPU and closer to a minute on CPU.

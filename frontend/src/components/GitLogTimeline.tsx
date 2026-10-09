@@ -52,8 +52,8 @@ const MAIN: MainCommit[] = [
   { type: 'main', date: '2025-06', title: 'Software AI Engineer Intern', org: 'Zillion Technologies', period: 'Jun – Oct 2025', bullets: ['Zecured IAM admin panel', 'Role clustering + approval flow'], href: '/experience#zillion' },
   { type: 'main', date: '2025-10', title: 'AI Engineer', org: 'Zillion Technologies', period: 'Oct 2025 – Jan 2026', bullets: ['Sysco voice agent (LangGraph, Google ADK)', 'Local Phi-3, 4-bit, replacing GPT'], href: '/experience#zillion' },
   { type: 'main', date: '2026-01', title: 'AI Engineer', org: 'Minfy Technologies', period: 'Jan 2026 – present', bullets: ['Grubhub ranker: 1.1M-request load test', 'Samsara dashcam VLM pipeline · LLM eval bench'], href: '/experience#minfy-technologies' },
-  { type: 'main', date: '2026-09', title: '🏆 2nd Place · AWS × Anthropic Hackathon', org: 'Houston, TX', period: 'Sep 2026', bullets: ['Pipeline leak-detection agent on Bedrock AgentCore'], href: '/experience#minfy-technologies', milestone: true },
   { type: 'main', date: '2026-09', title: 'Solutions Architect (Pre-Sales)', org: 'Minfy Technologies', period: 'Sep 2026 – present', bullets: ['Discovery → AWS architecture', 'SOWs + cost estimates'], href: '/experience#minfy-technologies' },
+  { type: 'main', date: '2026-09', title: '🏆 2nd Place · AWS × Anthropic Hackathon', org: 'Houston, TX', period: 'Sep 2026', bullets: ['Pipeline leak-detection agent on Bedrock AgentCore'], href: '/projects/pipeline-leak-agent', milestone: true },
 ];
 
 const PROJECTS: ProjectCommit[] = [
@@ -65,6 +65,7 @@ const PROJECTS: ProjectCommit[] = [
   { type: 'project', id: 'website', image: '/content/projects/Featured/website/image.jpg', date: '2025-07', title: 'naitikg.us', summary: 'This site: Next.js on AWS Amplify, a RAG chatbot on Lambda + Bedrock, and a live terminal background.', tags: ['Next.js', 'AWS', 'RAG'], kind: 'software', href: '/projects/website', github: 'https://github.com/naitikg2305/PersonalWebsite' },
   { type: 'project', id: 'peoplelens', date: '2026-07', end: '2026-09', title: 'PeopleLens', summary: 'Consent-based face re-identification: detection, FaceNet embeddings, local-only storage.', tags: ['PyTorch', 'FaceNet', 'FastAPI'], kind: 'ai', href: '/projects/peoplelens', github: 'https://github.com/naitikg2305/FaceDetect' },
   { type: 'project', id: 'localchat', date: '2026-08', end: '2026-09', title: 'Offline LLM Agent (Local-chat)', summary: 'Fully local chat agent with memory and a bounded web-research tool loop on a laptop GPU.', tags: ['Ollama', 'Qwen3', 'FastAPI'], kind: 'ai', href: '/projects/local-chat', github: 'https://github.com/naitikg2305/Local-chat' },
+  { type: 'project', id: 'leakagent', date: '2026-09', end: '2026-09', title: 'Pipeline Leak-Detection Agent', summary: 'Hackathon 2nd place: SCADA leak detection on Bedrock AgentCore; 20/20 labelled events, ~5 mi localization.', tags: ['Bedrock AgentCore', 'Strands', 'Claude'], kind: 'ai', href: '/projects/pipeline-leak-agent', github: 'https://github.com/naitikg2305/AWS_Hackathon_Minfy' },
   { type: 'project', id: 'eval', date: '2026-10', title: 'LLM Evaluation Toolkit', summary: 'Five offline-reproducible eval tools: taxonomy, judge reliability, regression gates, agreement, RAG quality.', tags: ['Python', 'SciPy', 'pytest'], kind: 'ai', href: '/projects/llm-eval-toolkit' },
 ];
 
