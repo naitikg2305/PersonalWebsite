@@ -79,7 +79,7 @@ export default function Home() {
             </div>
 
             {/* middle: ask the AI inline (answers drop down from under the navbar), then site search */}
-            <div className="mx-4 flex min-w-0 max-w-2xl flex-1 items-center gap-2">
+            <div className="flex w-full min-w-0 max-w-xl items-center gap-2 md:mx-4 md:w-auto md:flex-1">
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -87,18 +87,18 @@ export default function Home() {
                   ask(askDraft);
                   setAskDraft('');
                 }}
-                className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-[#00ff88]/25 bg-[#0d1110] py-1 pl-3 pr-1 shadow-[0_0_14px_rgba(0,255,136,0.06)] transition focus-within:border-[#00ff88]/60"
+                className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg border border-[#00ff88]/25 bg-[#0d1110] py-0.5 pl-2.5 pr-0.5 shadow-[0_0_14px_rgba(0,255,136,0.06)] transition focus-within:border-[#00ff88]/60"
               >
-                <span className="font-mono text-[#00ff88]">❯</span>
+                <span className="font-mono text-[13px] text-[#00ff88]">❯</span>
                 <input
                   value={askDraft}
                   onChange={(e) => setAskDraft(e.target.value)}
                   placeholder="e.g. What did Naitik build at Grubhub?"
                   maxLength={1000}
                   aria-label="Ask the AI about Naitik"
-                  className="min-w-0 flex-1 bg-transparent font-sans text-[14px] font-normal text-neutral-100 outline-none placeholder:text-neutral-500"
+                  className="min-w-0 flex-1 bg-transparent font-sans text-[13px] font-normal text-neutral-100 outline-none placeholder:text-neutral-500"
                 />
-                <button type="submit" className="rounded-md bg-[#1f5c3a] px-3.5 py-1 font-sans text-[13px] font-semibold text-neutral-100 transition hover:bg-[#25724a]">
+                <button type="submit" className="shrink-0 rounded-md bg-[#1f5c3a] px-2.5 py-0.5 font-sans text-[12px] font-semibold text-neutral-100 transition hover:bg-[#25724a]">
                   ask
                 </button>
                 <button
@@ -107,7 +107,7 @@ export default function Home() {
                   aria-expanded={chatOpen}
                   aria-label={chatOpen ? 'Hide chat' : 'Show chat'}
                   title={chatOpen ? 'Hide chat' : 'Show chat'}
-                  className="px-1 font-mono text-[12px] text-neutral-500 transition hover:text-[#00ff88]"
+                  className="shrink-0 px-1 font-mono text-[11px] text-neutral-500 transition hover:text-[#00ff88]"
                 >
                   {chatOpen ? '▴' : '▾'}
                 </button>
@@ -116,11 +116,11 @@ export default function Home() {
                 onClick={openPalette}
                 aria-label="Search the site"
                 title="Search the site (Ctrl K or /)"
-                className="flex shrink-0 items-center gap-1.5 rounded-md border border-neutral-700 bg-[#0d1110] px-2.5 py-1 font-mono text-[12px] font-normal text-neutral-300 transition hover:border-[#00ff88]/60 hover:text-[#00ff88]"
+                className="flex shrink-0 items-center gap-1 rounded-md border border-neutral-700 bg-[#0d1110] px-2 py-0.5 font-mono text-[11px] font-normal text-neutral-300 transition hover:border-[#00ff88]/60 hover:text-[#00ff88]"
               >
-                <HiOutlineSearch size={14} />
+                <HiOutlineSearch size={13} />
                 search
-                <kbd className="rounded border border-neutral-700 px-1 text-[10px] leading-4 text-neutral-500">/</kbd>
+                <kbd className="hidden rounded border border-neutral-700 px-1 text-[10px] leading-4 text-neutral-500 sm:inline">/</kbd>
               </button>
             </div>
 
