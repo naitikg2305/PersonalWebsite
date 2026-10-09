@@ -10,7 +10,8 @@ import { usePathname } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { HiChevronDown, HiChevronUp } from 'react-icons/hi';
+import { HiChevronUp } from 'react-icons/hi';
+import { HiArrowsPointingIn, HiArrowsPointingOut } from 'react-icons/hi2';
 import type { IndexItem } from '@/lib/siteIndex';
 import { liveLog } from '@/lib/liveLog';
 
@@ -314,16 +315,32 @@ export default function ChatProvider({ index, children }: { index: IndexItem[]; 
             </div>
           </form>
 
-          {/* maximize ↓ / minimize ↑ tab on the bottom edge */}
-          <button
-            onClick={() => setMaximized((m) => !m)}
-            className={`absolute left-1/2 flex h-[22px] w-14 -translate-x-1/2 items-center justify-center border bg-black transition hover:text-white ${maximized ? 'bottom-0 rounded-t-md border-b-0' : '-bottom-[22px] rounded-b-md border-t-0'}`}
+          {/* tab on the bottom edge: ↑ folds the panel back up into the navbar; the other button toggles full screen */}
+          <div
+            className={`absolute left-1/2 flex h-[24px] -translate-x-1/2 items-stretch overflow-hidden border bg-black ${maximized ? 'bottom-0 rounded-t-md border-b-0' : '-bottom-[24px] rounded-b-md border-t-0'}`}
             style={{ borderColor: `${ACCENT}44`, color: ACCENT }}
-            aria-label={maximized ? 'Minimize chat' : 'Maximize chat'}
-            title={maximized ? 'Minimize' : 'Maximize'}
           >
-            {maximized ? <HiChevronUp size={16} /> : <HiChevronDown size={16} />}
-          </button>
+            <button
+              onClick={() => {
+                setOpen(false);
+                setMaximized(false);
+              }}
+              className="flex w-12 items-center justify-center transition hover:bg-[#00ff8814] hover:text-white"
+              aria-label="Minimize chat"
+              title="Minimize"
+            >
+              <HiChevronUp size={17} />
+            </button>
+            <button
+              onClick={() => setMaximized((m) => !m)}
+              className="flex w-10 items-center justify-center border-l transition hover:bg-[#00ff8814] hover:text-white"
+              style={{ borderColor: `${ACCENT}33` }}
+              aria-label={maximized ? 'Exit full screen' : 'Full screen'}
+              title={maximized ? 'Exit full screen' : 'Full screen'}
+            >
+              {maximized ? <HiArrowsPointingIn size={14} /> : <HiArrowsPointingOut size={14} />}
+            </button>
+          </div>
         </aside>
       </div>
     </ChatContext.Provider>
