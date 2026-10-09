@@ -3,14 +3,15 @@
 // Landing intro: a fake-but-faithful deploy of this very site streams on a black screen,
 // then the terminal dissolves into a faint, still-scrolling backdrop behind the page.
 // Plays once per tab session; any key/click skips; reduced-motion users skip entirely.
-// Once the hero name has typed in, the terminal runs `cat about.md` and types the About text out
-// as one block, which then stays in the log.
+// The log keeps going after the deploy: `./naitik --init` draws "NAITIK GUPTA" in big Unicode block
+// letters (built column by column, in the same log), types the tagline, then `cat about.md` types the
+// About text below it, then points you to scroll. It all stays in the log, like one terminal session.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLiveLog } from './LiveLog';
 
 const HOME_SECTIONS = ['timeline', 'about', 'featured', 'experience', 'education', 'chat'];
 
-type Kind = 'cmd' | 'out' | 'ok' | 'bar' | 'dim' | 'about';
+type Kind = 'cmd' | 'out' | 'ok' | 'bar' | 'dim' | 'about' | 'banner' | 'tagline';
 interface Line {
   kind: Kind;
   text: string;
@@ -43,7 +44,24 @@ const SCRIPT: Line[] = [
   { kind: 'cmd', text: './naitik --init', pause: 450 },
 ];
 
-const prefix: Record<Kind, string> = { cmd: '$ ', out: '  ', ok: '  ', bar: '  ', dim: '# ', about: '' };
+const prefix: Record<Kind, string> = { cmd: '$ ', out: '  ', ok: '  ', bar: '  ', dim: '# ', about: '', banner: '', tagline: '' };
+
+// "ANSI Shadow" figlet glyphs: the banner is rendered from these, not stored as a picture
+const GLYPHS: Record<string, string[]> = {
+  N: ['███╗   ██╗', '████╗  ██║', '██╔██╗ ██║', '██║╚██╗██║', '██║ ╚████║', '╚═╝  ╚═══╝'],
+  A: [' █████╗ ', '██╔══██╗', '███████║', '██╔══██║', '██║  ██║', '╚═╝  ╚═╝'],
+  I: ['██╗', '██║', '██║', '██║', '██║', '╚═╝'],
+  T: ['████████╗', '╚══██╔══╝', '   ██║   ', '   ██║   ', '   ██║   ', '   ╚═╝   '],
+  K: ['██╗  ██╗', '██║ ██╔╝', '█████╔╝ ', '██╔═██╗ ', '██║  ██╗', '╚═╝  ╚═╝'],
+  G: [' ██████╗ ', '██╔════╝ ', '██║  ███╗', '██║   ██║', '╚██████╔╝', ' ╚═════╝ '],
+  U: ['██╗   ██╗', '██║   ██║', '██║   ██║', '██║   ██║', '╚██████╔╝', ' ╚═════╝ '],
+  P: ['██████╗ ', '██╔══██╗', '██████╔╝', '██╔═══╝ ', '██║     ', '╚═╝     '],
+};
+const figlet = (word: string) => GLYPHS.N.map((_, row) => [...word].map((ch) => GLYPHS[ch][row]).join(' '));
+// two words stacked, so the letters can be big and still fit the left pane
+const BANNER = [...figlet('NAITIK'), '', ...figlet('GUPTA')];
+const BANNER_W = Math.max(...BANNER.map((l) => l.length));
+const TAGLINE = 'Decode the world to build it better.';
 
 // about.md → plain terminal text (no heading, no markdown emphasis)
 const plain = (md: string) =>
@@ -59,11 +77,26 @@ const color: Record<Kind, string> = {
   bar: 'text-neutral-300',
   dim: 'text-neutral-600',
   about: 'text-neutral-400',
+  banner: 'text-[#3dff8c]',
+  tagline: 'text-[#3dff8c]',
 };
 
 type Phase = 'boot' | 'dissolve' | 'backdrop';
 
-export default function BootSequence({ onDone, typeAbout = false }: { onDone: () => void; typeAbout?: boolean }) {
+/** Big block letters; size scales with the viewport so the stacked words fill the left pane (BANNER_W columns). */
+function Banner({ lines }: { lines: string[] }) {
+  return (
+    <pre
+      aria-label="Naitik Gupta"
+      className="my-2 font-mono font-bold text-[#3dff8c] text-[min(3.2vw,22px)] md:text-[min(1.8vw,22px)]"
+      style={{ lineHeight: 1, textShadow: '0 0 12px rgba(61,255,140,0.55)' }}
+    >
+      {lines.join('\n')}
+    </pre>
+  );
+}
+
+export default function BootSequence({ onDone, onIntro }: { onDone: () => void; onIntro?: () => void }) {
   const [phase, setPhase] = useState<Phase>('boot');
   const [lines, setLines] = useState<{ kind: Kind; text: string }[]>([]);
   const [typing, setTyping] = useState(''); // current command being typed
@@ -177,46 +210,79 @@ export default function BootSequence({ onDone, typeAbout = false }: { onDone: ()
     [],
   );
 
-  // after the name: `cat about.md`, then the About text types out as one block
-  const [about, setAbout] = useState<string | null>(null); // the block while it is being typed
-  const aboutStarted = useRef(false);
+  // the intro, continuing the same log: banner → tagline → cat about.md → scroll hint
+  const [about, setAbout] = useState<string | null>(null); // About pane text (typed progressively)
+  const [bannerCols, setBannerCols] = useState(-1); // columns of the banner drawn so far (-1 = not yet)
+  const introStarted = useRef(false);
+  // latched once the boot script ends; the dissolve → backdrop change must not restart the intro
+  const introGo = phase !== 'boot';
   useEffect(() => {
-    if (!typeAbout || phase !== 'backdrop' || aboutStarted.current) return;
-    aboutStarted.current = true;
+    if (!introGo || introStarted.current) return; // runs on straight from the boot script
+    introStarted.current = true;
     let cancelled = false;
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    let instant = false;
+    try {
+      instant = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {}
+    const type = async (text: string, ms: number) => {
+      for (let i = 1; i <= text.length && !cancelled; i++) {
+        setTyping(text.slice(0, i));
+        if (!instant) await sleep(ms);
+      }
+      setTyping('');
+    };
+    const add = (kind: Kind, text: string) => setLines((l) => [...l, { kind, text }]);
     (async () => {
-      const text = plain(await (await fetch('/content/about/about.md')).text());
-      const cmd = 'cat about.md';
-      for (let i = 1; i <= cmd.length && !cancelled; i++) {
-        setTyping(cmd.slice(0, i));
-        await sleep(35);
+      const aboutText = fetch('/content/about/about.md').then((r) => r.text()).then(plain);
+      // `./naitik --init` (the boot script's last line) prints the banner, built left to right
+      for (let c = 0; c <= BANNER_W && !cancelled; c += instant ? BANNER_W : 1) {
+        setBannerCols(c);
+        if (!instant) await sleep(24);
       }
       if (cancelled) return;
-      setTyping('');
-      setLines((l) => [...l, { kind: 'cmd', text: cmd }]);
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      for (let i = reduce ? text.length : 0; i <= text.length && !cancelled; i += 3) {
+      setBannerCols(-1);
+      add('banner', BANNER.join('\n'));
+      if (!instant) await sleep(200);
+      for (let i = 1; i <= TAGLINE.length && !cancelled; i++) {
+        setTagline(TAGLINE.slice(0, i));
+        if (!instant) await sleep(38);
+      }
+      if (cancelled) return;
+      setTagline(null);
+      add('tagline', TAGLINE);
+      if (!instant) await sleep(400);
+      await type('cat about.md', 40);
+      if (cancelled) return;
+      add('cmd', 'cat about.md');
+      const text = await aboutText;
+      for (let i = instant ? text.length : 0; i <= text.length && !cancelled; i += 3) {
         setAbout(text.slice(0, i));
-        await sleep(10);
+        if (!instant) await sleep(10);
       }
       if (cancelled) return;
       setAbout(null);
-      setLines((l) => [...l, { kind: 'about', text }]);
+      add('about', text);
+      if (!instant) await sleep(300);
+      add('dim', 'scroll ⌄ to see the git log');
+      setIntroDone(true);
+      onIntro?.();
     })().catch(() => {});
     return () => {
       cancelled = true;
-      aboutStarted.current = false;
+      introStarted.current = false;
     };
-  }, [typeAbout, phase]);
+  }, [introGo, onIntro]);
+  const [tagline, setTagline] = useState<string | null>(null);
+  const [introDone, setIntroDone] = useState(false); // live activity starts printing after the intro
   useEffect(() => {
-    if (phase === 'backdrop') pushLive('dim', "live · this session's clicks, network requests and AI calls print here");
-  }, [phase, pushLive]);
-  useLiveLog(phase === 'backdrop', pushLive, { sections: HOME_SECTIONS });
+    if (phase === 'backdrop' && introDone) pushLive('dim', "live · this session's clicks, network requests and AI calls print here");
+  }, [phase, introDone, pushLive]);
+  useLiveLog(phase === 'backdrop' && introDone, pushLive, { sections: HOME_SECTIONS });
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [lines, typing, bar, about]);
+  }, [lines, typing, bar, about, bannerCols, tagline]);
 
   // inline styles: the dissolve values must always apply (no reliance on generated utility classes)
   const fade = Math.min(1, scroll / (typeof window === 'undefined' ? 800 : window.innerHeight * 0.9)); // 0 at top → 1 after ~a screen
@@ -246,8 +312,14 @@ export default function BootSequence({ onDone, typeAbout = false }: { onDone: ()
       <div ref={scrollRef} className="h-full overflow-hidden px-5 py-6 text-left font-mono text-[13px] leading-6 sm:px-8 sm:text-sm">
         <div className="flex min-h-full flex-col justify-end md:max-w-[56%]">
           {lines.map((l, i) =>
-            l.kind === 'about' ? (
-              <div key={i} className={`my-1 whitespace-pre-wrap break-words md:max-w-[44vw] ${color.about}`}>
+            l.kind === 'banner' ? (
+              <Banner key={i} lines={BANNER} />
+            ) : l.kind === 'tagline' ? (
+              <div key={i} className="mb-3 mt-1 text-base font-semibold text-[#3dff8c] sm:text-lg" style={{ textShadow: '0 0 10px rgba(61,255,140,0.6)' }}>
+                {l.text}
+              </div>
+            ) : l.kind === 'about' ? (
+              <div key={i} className={`my-1 whitespace-pre-wrap break-words ${color.about}`}>
                 {l.text}
               </div>
             ) : (
@@ -257,8 +329,15 @@ export default function BootSequence({ onDone, typeAbout = false }: { onDone: ()
               </div>
             ),
           )}
+          {bannerCols >= 0 && <Banner lines={BANNER.map((l) => l.slice(0, bannerCols))} />}
+          {tagline !== null && (
+            <div className="mb-3 mt-1 text-base font-semibold text-[#3dff8c] sm:text-lg" style={{ textShadow: '0 0 10px rgba(61,255,140,0.6)' }}>
+              {tagline}
+              <span className="ml-0.5 inline-block h-4 w-2 translate-y-0.5 animate-pulse bg-[#3dff8c]" />
+            </div>
+          )}
           {about !== null && (
-            <div className={`my-1 whitespace-pre-wrap break-words md:max-w-[44vw] ${color.about}`}>
+            <div className={`my-1 whitespace-pre-wrap break-words ${color.about}`}>
               {about}
               <span className="ml-0.5 inline-block h-4 w-2 translate-y-0.5 animate-pulse bg-[#3dff8c]" />
             </div>

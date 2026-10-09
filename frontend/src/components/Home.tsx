@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import styles from '../styles/landing.module.css';
 import { FaGithub, FaLinkedin } from "react-icons/fa";
 import { HiOutlineMail } from "react-icons/hi";
@@ -16,25 +16,16 @@ import { HiOutlineDocumentText, HiOutlineSearch } from "react-icons/hi";
 
 
 export default function Home() {
-  const name = 'Naitik Gupta';
-  const quote = 'Decode the world to build it better.';
 
   const [scrollY, setScrollY] = useState(0);
   const [scrolled, setScrolled] = useState(false);
-  const [nameIndex, setNameIndex] = useState(0);
-  const [showQuote, setShowQuote] = useState(false);
   const { open: chatOpen, toggle: toggleChat, ask } = useChat();
   const [askDraft, setAskDraft] = useState('');
   const { openPalette } = usePalette();
-  const [booted, setBooted] = useState(false); // name types only after the boot intro
-  const [showScrollHint, setShowScrollHint] = useState(false);
+  const [booted, setBooted] = useState(false); // profile photo shows after the boot intro
+  const [showScrollHint, setShowScrollHint] = useState(false); // after the terminal's banner intro
+  const onIntro = useCallback(() => setShowScrollHint(true), []);
 
-  // After 5s on the landing screen, start nudging the name up to reveal a scroll hint
-  useEffect(() => {
-    if (!booted) return;
-    const timeout = setTimeout(() => setShowScrollHint(true), 5000);
-    return () => clearTimeout(timeout);
-  }, [booted]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,16 +36,6 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (!booted) return;
-    if (nameIndex < name.length) {
-      const timeout = setTimeout(() => setNameIndex(nameIndex + 1), 150);
-      return () => clearTimeout(timeout);
-    } else if (!showQuote) {
-      const quoteTimeout = setTimeout(() => setShowQuote(true), 400);
-      return () => clearTimeout(quoteTimeout);
-    }
-  }, [nameIndex, booted]);
 
   return (
     <div className={styles.pageWrapper}>
@@ -74,7 +55,7 @@ export default function Home() {
       )}
 
       <div className={styles.container}>
-        <BootSequence onDone={() => setBooted(true)} typeAbout={showQuote} />
+        <BootSequence onDone={() => setBooted(true)} onIntro={onIntro} />
         {scrolled && (
           <div className={styles.navbar} data-site-nav style={{ alignItems: 'center' }}>
             <div className={styles.navTitle} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -155,23 +136,16 @@ export default function Home() {
           </div>
         )}
 
-        <div className={`${styles.nameContainer} ${scrolled ? styles.shrunk : ''}`}>
-          <div className={showScrollHint && !scrolled ? styles.heroNudge : ''}>
-            <span className={styles.name}>{name.slice(0, nameIndex)}</span>
-            {showQuote && !scrolled && (
-              <div className={styles.quote}>{quote}</div>
-            )}
-          </div>
-          {showScrollHint && !scrolled && (
-            <button
-              className={styles.scrollHint}
-              onClick={() => window.scrollTo({ top: window.innerHeight * 0.9, behavior: 'smooth' })}
-              aria-label="Scroll down"
-            >
-              scroll ⌄
-            </button>
-          )}
-        </div>
+        {/* the terminal prints the name banner now; the hero is just the scroll cue */}
+        {showScrollHint && !scrolled && (
+          <button
+            className="fixed bottom-8 left-1/2 z-10 -translate-x-1/2 animate-bounce font-mono text-sm text-[#00ff88]/80 transition hover:text-[#00ff88]"
+            onClick={() => window.scrollTo({ top: window.innerHeight * 0.9, behavior: 'smooth' })}
+            aria-label="Scroll down"
+          >
+            scroll ⌄
+          </button>
+        )}
 
         <div className={styles.contentContainer} id="about">
           <GitLogTimeline />
