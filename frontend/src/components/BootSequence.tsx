@@ -3,9 +3,9 @@
 // Landing intro: a fake-but-faithful deploy of this very site streams on a black screen,
 // then the terminal dissolves into a faint, still-scrolling backdrop behind the page.
 // Plays once per tab session; any key/click skips; reduced-motion users skip entirely.
-// Then the terminal *is* the hero: it clears, runs figlet and draws "NAITIK GUPTA" in big Unicode
-// block letters (column by column), types the tagline, runs `cat about.md` and types the About text
-// below it, then points you to scroll. It all stays in the log.
+// The log keeps going after the deploy: `./naitik --init` draws "NAITIK GUPTA" in big Unicode block
+// letters (built column by column, in the same log), types the tagline, then `cat about.md` types the
+// About text below it, then points you to scroll. It all stays in the log, like one terminal session.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLiveLog } from './LiveLog';
 
@@ -210,12 +210,14 @@ export default function BootSequence({ onDone, onIntro }: { onDone: () => void; 
     [],
   );
 
-  // the intro: clear → figlet banner → tagline → cat about.md → scroll hint
+  // the intro, continuing the same log: banner → tagline → cat about.md → scroll hint
   const [about, setAbout] = useState<string | null>(null); // About pane text (typed progressively)
   const [bannerCols, setBannerCols] = useState(-1); // columns of the banner drawn so far (-1 = not yet)
   const introStarted = useRef(false);
+  // latched once the boot script ends; the dissolve → backdrop change must not restart the intro
+  const introGo = phase !== 'boot';
   useEffect(() => {
-    if (phase !== 'backdrop' || introStarted.current) return;
+    if (!introGo || introStarted.current) return; // runs on straight from the boot script
     introStarted.current = true;
     let cancelled = false;
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -233,17 +235,10 @@ export default function BootSequence({ onDone, onIntro }: { onDone: () => void; 
     const add = (kind: Kind, text: string) => setLines((l) => [...l, { kind, text }]);
     (async () => {
       const aboutText = fetch('/content/about/about.md').then((r) => r.text()).then(plain);
-      if (!instant) await sleep(250);
-      await type('clear', 45);
-      if (cancelled) return;
-      setLines([]);
-      await type('figlet -f "ANSI Shadow" "Naitik Gupta"', 18);
-      if (cancelled) return;
-      add('cmd', 'figlet -f "ANSI Shadow" "Naitik Gupta"');
-      // draw the banner left to right, a few columns per frame
-      for (let c = 0; c <= BANNER_W && !cancelled; c += instant ? BANNER_W : 2) {
+      // `./naitik --init` (the boot script's last line) prints the banner, built left to right
+      for (let c = 0; c <= BANNER_W && !cancelled; c += instant ? BANNER_W : 1) {
         setBannerCols(c);
-        if (!instant) await sleep(14);
+        if (!instant) await sleep(24);
       }
       if (cancelled) return;
       setBannerCols(-1);
@@ -270,18 +265,20 @@ export default function BootSequence({ onDone, onIntro }: { onDone: () => void; 
       add('about', text);
       if (!instant) await sleep(300);
       add('dim', 'scroll ⌄ to see the git log');
+      setIntroDone(true);
       onIntro?.();
     })().catch(() => {});
     return () => {
       cancelled = true;
       introStarted.current = false;
     };
-  }, [phase, onIntro]);
+  }, [introGo, onIntro]);
   const [tagline, setTagline] = useState<string | null>(null);
+  const [introDone, setIntroDone] = useState(false); // live activity starts printing after the intro
   useEffect(() => {
-    if (phase === 'backdrop') pushLive('dim', "live · this session's clicks, network requests and AI calls print here");
-  }, [phase, pushLive]);
-  useLiveLog(phase === 'backdrop', pushLive, { sections: HOME_SECTIONS });
+    if (phase === 'backdrop' && introDone) pushLive('dim', "live · this session's clicks, network requests and AI calls print here");
+  }, [phase, introDone, pushLive]);
+  useLiveLog(phase === 'backdrop' && introDone, pushLive, { sections: HOME_SECTIONS });
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
